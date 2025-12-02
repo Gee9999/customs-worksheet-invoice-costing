@@ -80,6 +80,8 @@ const Index = () => {
         const factor = costingData.factors[dutyPercent] || costingData.factors[0];
         const finalCost = item.amount * factor;
 
+        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}`);
+
         return {
           cartonNo: item.cartonNo,
           code: item.code,

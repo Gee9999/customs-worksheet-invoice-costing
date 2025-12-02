@@ -8,6 +8,8 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
+  console.log("Parsing costing file, total rows:", jsonData.length);
+
   // Extract values from the expected positions based on the template
   const invoiceTotal = parseFloat(jsonData[4]?.[5]) || 0;
   const bankCharges = parseFloat(jsonData[11]?.[5]) || 0;
@@ -19,12 +21,30 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
   const dutiesRate = parseFloat(jsonData[21]?.[5]) || 0;
   const exchangeRate = parseFloat(jsonData[22]?.[5]) || 0;
 
-  const factors: { [key: number]: number } = {
-    0: parseFloat(jsonData[26]?.[2]) || 0,
-    15: parseFloat(jsonData[27]?.[2]) || 0,
-    20: parseFloat(jsonData[28]?.[2]) || 0,
-    30: parseFloat(jsonData[29]?.[2]) || 0,
-  };
+  // Search for FACTOR rows more flexibly
+  const factors: { [key: number]: number } = {};
+  
+  for (let i = 0; i < jsonData.length; i++) {
+    const row = jsonData[i];
+    if (row && row[0] && String(row[0]).toUpperCase().includes("FACTOR")) {
+      const dutyPercent = parseFloat(row[1]) || 0;
+      const factorValue = parseFloat(row[2]) || 0;
+      
+      console.log(`Found FACTOR at row ${i}: Duty ${dutyPercent}%, Factor ${factorValue}`);
+      factors[dutyPercent] = factorValue;
+    }
+  }
+
+  // Fallback to default positions if not found
+  if (Object.keys(factors).length === 0) {
+    console.log("No FACTOR rows found, using default positions");
+    factors[0] = parseFloat(jsonData[26]?.[2]) || 0;
+    factors[15] = parseFloat(jsonData[27]?.[2]) || 0;
+    factors[20] = parseFloat(jsonData[28]?.[2]) || 0;
+    factors[30] = parseFloat(jsonData[29]?.[2]) || 0;
+  }
+
+  console.log("Parsed factors:", factors);
 
   return {
     invoiceTotal,
