@@ -74,19 +74,10 @@ const Index = () => {
         { line: 5, tariff: "96019090", productCode: "SHELL", dutyFormula: "FREE", dutyPercent: 0, value: 0 },
       ];
 
-      // Fixed factors based on actual business calculation
-      const FACTORS: { [key: number]: number } = {
-        0: 22.70,
-        10: 24.50,
-        15: 25.40,
-        20: 26.25,
-        22: 26.60,
-      };
-
       // Process items
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
         const dutyPercent = matchItemToCustomsDuty(item, customsItems);
-        const factor = FACTORS[dutyPercent] || FACTORS[0];
+        const factor = costingData.factors[dutyPercent] || costingData.factors[0];
         const finalCost = item.amount * factor;
 
         console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}`);
