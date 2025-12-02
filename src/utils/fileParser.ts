@@ -123,7 +123,29 @@ export function matchItemToCustomsDuty(
 ): number {
   const itemDesc = item.description.toUpperCase();
   
-  // Try to match by description keywords
+  // Check for specific product categories
+  // Bead findings (clasps, jumprings) - 15%
+  if (itemDesc.includes("CLASP") || itemDesc.includes("JUMP RING") || itemDesc.includes("JUMPRING") || 
+      itemDesc.includes("FINDING") || itemDesc.includes("CRIMP")) {
+    return 15;
+  }
+  
+  // Colour box - 10%
+  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX")) {
+    return 10;
+  }
+  
+  // Tassels - 22%
+  if (itemDesc.includes("TASSEL")) {
+    return 22;
+  }
+  
+  // Fimo beads - 15%
+  if (itemDesc.includes("FIMO")) {
+    return 15;
+  }
+  
+  // Try to match by description keywords from customs items
   for (const customs of customsItems) {
     const customsDesc = customs.productCode.toUpperCase();
     
@@ -146,4 +168,48 @@ export function matchItemToCustomsDuty(
   }
   
   return 0; // Default to 0% if no match
+}
+
+export function interpolateFactor(
+  dutyPercent: number,
+  factors: { [key: number]: number }
+): number {
+  // If exact match exists, return it
+  if (factors[dutyPercent] !== undefined) {
+    return factors[dutyPercent];
+  }
+  
+  // Find the two closest duty percentages for interpolation
+  const sortedDuties = Object.keys(factors).map(Number).sort((a, b) => a - b);
+  
+  let lower = 0;
+  let upper = 0;
+  
+  for (let i = 0; i < sortedDuties.length; i++) {
+    if (sortedDuties[i] < dutyPercent) {
+      lower = sortedDuties[i];
+    }
+    if (sortedDuties[i] > dutyPercent && upper === 0) {
+      upper = sortedDuties[i];
+      break;
+    }
+  }
+  
+  // If we can't interpolate (duty is outside range), use nearest
+  if (lower === 0 && upper === 0) {
+    return factors[sortedDuties[0]];
+  }
+  if (upper === 0) {
+    return factors[lower];
+  }
+  
+  // Linear interpolation
+  const lowerFactor = factors[lower];
+  const upperFactor = factors[upper];
+  const ratio = (dutyPercent - lower) / (upper - lower);
+  const interpolated = lowerFactor + ratio * (upperFactor - lowerFactor);
+  
+  console.log(`Interpolated factor for ${dutyPercent}% duty: ${interpolated} (between ${lower}%=${lowerFactor} and ${upper}%=${upperFactor})`);
+  
+  return interpolated;
 }
