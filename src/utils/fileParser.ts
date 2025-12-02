@@ -28,7 +28,17 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
     const row = jsonData[i];
     if (row && row[0] && String(row[0]).toUpperCase().includes("FACTOR")) {
       const dutyPercent = parseFloat(row[1]) || 0;
-      const factorValue = parseFloat(row[2]) || 0;
+
+      // Factor value is not in the next column, it is a few columns to the right.
+      // Find the first numeric value after the duty column.
+      let factorValue = 0;
+      for (let j = 2; j < row.length; j++) {
+        const val = parseFloat(row[j]);
+        if (!Number.isNaN(val) && val !== 0) {
+          factorValue = val;
+          break;
+        }
+      }
       
       console.log(`Found FACTOR at row ${i}: Duty ${dutyPercent}%, Factor ${factorValue}`);
       factors[dutyPercent] = factorValue;
