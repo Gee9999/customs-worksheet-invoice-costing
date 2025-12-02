@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AirShipmentCosting, CustomsItem, ProcessedInvoiceItem } from "@/types/upload";
-import { parseAirShipmentCosting, parseInvoice, extractDutyFromFormula, matchItemToCustomsDuty } from "@/utils/fileParser";
+import { parseAirShipmentCosting, parseInvoice, extractDutyFromFormula, matchItemToCustomsDuty, interpolateFactor } from "@/utils/fileParser";
 import { FileUploader } from "@/components/FileUploader";
 import { CostSummary } from "@/components/CostSummary";
 import { ProcessedInvoiceTable } from "@/components/ProcessedInvoiceTable";
@@ -67,11 +67,14 @@ const Index = () => {
 
       // Create a simple customs mapping based on description
       const customsItems: CustomsItem[] = [
-        { line: 1, tariff: "481920", productCode: "FLAT COLOUR CARTON", dutyFormula: "10%", dutyPercent: 15, value: 0 },
+        { line: 1, tariff: "481920", productCode: "FLAT COLOUR CARTON", dutyFormula: "10%", dutyPercent: 10, value: 0 },
         { line: 2, tariff: "711790", productCode: "FASHION JEWELLERY", dutyFormula: "20%", dutyPercent: 20, value: 0 },
         { line: 3, tariff: "83089020", productCode: "METAL BEADS", dutyFormula: "FREE", dutyPercent: 0, value: 0 },
         { line: 4, tariff: "701810", productCode: "GLASS BEADS", dutyFormula: "20%", dutyPercent: 20, value: 0 },
         { line: 5, tariff: "96019090", productCode: "SHELL", dutyFormula: "FREE", dutyPercent: 0, value: 0 },
+        { line: 6, tariff: "83089020", productCode: "BEAD FINDINGS", dutyFormula: "15%", dutyPercent: 15, value: 0 },
+        { line: 7, tariff: "580610", productCode: "TASSELS", dutyFormula: "22%", dutyPercent: 22, value: 0 },
+        { line: 8, tariff: "39269099", productCode: "FIMO BEADS", dutyFormula: "15%", dutyPercent: 15, value: 0 },
       ];
 
       // Process items
@@ -79,8 +82,7 @@ const Index = () => {
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
         const dutyPercent = matchItemToCustomsDuty(item, customsItems);
         console.log(`Item: ${item.description}, Duty: ${dutyPercent}%`);
-        console.log(`Looking up factor for ${dutyPercent}:`, costingData.factors[dutyPercent]);
-        const factor = costingData.factors[dutyPercent] || costingData.factors[0];
+        const factor = interpolateFactor(dutyPercent, costingData.factors);
         const finalCost = item.amount * factor;
 
         console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}`);
