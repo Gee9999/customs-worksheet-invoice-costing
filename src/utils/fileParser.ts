@@ -55,6 +55,8 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
   }
 
   console.log("Parsed factors:", factors);
+  console.log("Factor keys:", Object.keys(factors));
+  console.log("Factor values:", Object.values(factors));
 
   return {
     invoiceTotal,

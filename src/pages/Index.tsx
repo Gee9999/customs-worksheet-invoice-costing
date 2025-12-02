@@ -75,8 +75,11 @@ const Index = () => {
       ];
 
       // Process items
+      console.log("Available factors:", costingData.factors);
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
         const dutyPercent = matchItemToCustomsDuty(item, customsItems);
+        console.log(`Item: ${item.description}, Duty: ${dutyPercent}%`);
+        console.log(`Looking up factor for ${dutyPercent}:`, costingData.factors[dutyPercent]);
         const factor = costingData.factors[dutyPercent] || costingData.factors[0];
         const finalCost = item.amount * factor;
 
