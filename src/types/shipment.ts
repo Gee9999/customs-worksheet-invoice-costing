@@ -18,10 +18,11 @@ export interface CustomsMapping {
 }
 
 export const DUTY_FACTORS = {
-  0: 28.56480776,
-  15: 31.20630776,
-  20: 32.08680776,
-  30: 33.84780776,
+  0: 22.70,
+  10: 24.50,
+  15: 25.40,
+  20: 26.25,
+  22: 26.60,
 } as const;
 
 export const CUSTOMS_MAPPINGS: CustomsMapping[] = [
