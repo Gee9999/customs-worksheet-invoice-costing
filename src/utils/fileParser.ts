@@ -92,7 +92,10 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     const unitPrice = parseFloat(row[5]) || 0;
     const amount = parseFloat(row[6]) || 0;
 
-    if (amount > 0) {
+    // Include items with amount > 0 OR items with valid unit price
+    if (amount > 0 || (unitPrice > 0 && qty > 0)) {
+      const finalAmount = amount > 0 ? amount : unitPrice * qty;
+      console.log(`Adding item: ${description}, code: ${code}, amount: ${finalAmount}`);
       items.push({
         cartonNo,
         code,
@@ -100,7 +103,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
         qty,
         unit,
         unitPrice,
-        amount,
+        amount: finalAmount,
         dutyPercent: 0,
         factor: 0,
       });
@@ -122,6 +125,12 @@ export function matchItemToCustomsDuty(
   customsItems: CustomsItem[]
 ): number {
   const itemDesc = item.description.toUpperCase();
+  const itemCode = item.code.toUpperCase();
+  
+  // Check for specific product codes first
+  if (itemCode.includes("8618100373")) {
+    return 15; // Assuming this is a bead finding based on tariff pattern
+  }
   
   // Check for specific product categories
   // Bead findings (clasps, jumprings) - 15%
@@ -130,8 +139,9 @@ export function matchItemToCustomsDuty(
     return 15;
   }
   
-  // Colour box - 10%
-  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX")) {
+  // Colour box - 10% (check both with code and without)
+  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX") || 
+      itemDesc.includes("BOX") || itemCode.includes("BOX")) {
     return 10;
   }
   
@@ -160,9 +170,6 @@ export function matchItemToCustomsDuty(
       return customs.dutyPercent;
     }
     if (itemDesc.includes("SHELL") && customsDesc.includes("SHELL")) {
-      return customs.dutyPercent;
-    }
-    if (itemDesc.includes("BOX") && customsDesc.includes("CARTON")) {
       return customs.dutyPercent;
     }
   }
