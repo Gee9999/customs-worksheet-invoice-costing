@@ -79,8 +79,8 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
 
   const items: InvoiceItem[] = [];
   
-  // Start from row 14 (index 13) based on the template structure
-  for (let i = 14; i < jsonData.length; i++) {
+  // Scan all rows and pick those that look like invoice lines
+  for (let i = 0; i < jsonData.length; i++) {
     const row = jsonData[i];
     if (!row || !row[0]) continue; // Skip empty rows
     
