@@ -30,12 +30,12 @@ export function CostSummary({ costing, items }: CostSummaryProps) {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardDescription>Total Final Cost</CardDescription>
-          <CardTitle className="text-3xl text-primary">${totalFinalCost.toFixed(2)}</CardTitle>
+          <CardDescription>Total Final Cost (ZAR)</CardDescription>
+          <CardTitle className="text-3xl text-primary">R{totalFinalCost.toFixed(2)}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            +${(totalFinalCost - totalInvoiceAmount).toFixed(2)} markup
+            +R{(totalFinalCost - totalInvoiceAmount).toFixed(2)} markup
           </p>
         </CardContent>
       </Card>
@@ -60,7 +60,7 @@ export function CostSummary({ costing, items }: CostSummaryProps) {
             .map(([duty, amount]) => (
               <div key={duty} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{duty}% duty:</span>
-                <span className="font-medium">${amount.toFixed(2)}</span>
+                <span className="font-medium">R{amount.toFixed(2)}</span>
               </div>
             ))}
         </CardContent>
