@@ -32,4 +32,5 @@ export interface ProcessedInvoiceItem {
   dutyPercent: number;
   factor: number;
   finalCost: number;
+  sellingPrice: number;
 }

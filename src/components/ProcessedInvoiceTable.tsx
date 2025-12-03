@@ -31,6 +31,7 @@ export function ProcessedInvoiceTable({ items }: ProcessedInvoiceTableProps) {
               <TableHead className="text-right">DUTY %</TableHead>
               <TableHead className="text-right">FACTOR</TableHead>
               <TableHead className="text-right">FINAL COST (ZAR)</TableHead>
+              <TableHead className="text-right">SELLING PRICE (ZAR)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -56,6 +57,9 @@ export function ProcessedInvoiceTable({ items }: ProcessedInvoiceTableProps) {
                 </TableCell>
                 <TableCell className="text-right font-bold text-primary">
                   R{item.finalCost.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right font-bold text-green-600">
+                  R{item.sellingPrice.toFixed(2)}
                 </TableCell>
               </TableRow>
             ))}
