@@ -91,15 +91,11 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     const unit = String(row[4] || "");
     const unitPrice = parseFloat(row[5]) || 0;
     const amount = parseFloat(row[6]) || 0;
-    
-    // Read duty percent and factor from columns 7 and 8 if available
-    const dutyPercent = parseFloat(row[7]) || 0;
-    const factor = parseFloat(row[8]) || 0;
 
     // Include items with amount > 0 OR items with valid unit price
     if (amount > 0 || (unitPrice > 0 && qty > 0)) {
       const finalAmount = amount > 0 ? amount : unitPrice * qty;
-      console.log(`Adding item: ${description}, code: ${code}, amount: ${finalAmount}, duty: ${dutyPercent}%, factor: ${factor}`);
+      console.log(`Adding item: ${description}, code: ${code}, amount: ${finalAmount}`);
       items.push({
         cartonNo,
         code,
@@ -108,8 +104,8 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
         unit,
         unitPrice,
         amount: finalAmount,
-        dutyPercent,
-        factor,
+        dutyPercent: 0,
+        factor: 0,
       });
     }
   }
