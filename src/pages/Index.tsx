@@ -88,16 +88,18 @@ const Index = () => {
         const dutyPercent = matchItemToCustomsDuty(item, customsItems);
         console.log(`Item: ${item.description}, Duty: ${dutyPercent}%`);
         const factor = interpolateFactor(dutyPercent, costingData.factors);
-        const finalCost = item.amount * factor;
+        
+        // Landed cost = Unit Price × Factor (per unit in ZAR)
+        const landedCost = item.unitPrice * factor;
+        const finalCost = landedCost * item.qty; // Total line cost
         
         // Calculate selling price per unit for 45% gross profit margin
         // GP = (Selling - Cost) / Selling = 0.45
         // Selling = Cost / (1 - 0.45) = Cost / 0.55
-        const unitCost = finalCost / item.qty;
-        const rawSellingPrice = unitCost / 0.55;
+        const rawSellingPrice = landedCost / 0.55;
         const sellingPrice = roundToHalf(rawSellingPrice);
 
-        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}, unitCost=${unitCost}, sellingPrice=${sellingPrice}`);
+        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, landedCost=${landedCost}, sellingPrice=${sellingPrice}`);
 
         return {
           cartonNo: item.cartonNo,
