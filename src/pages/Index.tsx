@@ -155,7 +155,7 @@ const Index = () => {
       processedItems.map(item => ({
         "C/NO.": item.cartonNo,
         "CODE": item.code,
-        "DESCRIPTION": item.description,
+        "DESCRIPTION": item.description.replace(/,/g, ''),
         "QTY": item.qty,
         "UNIT": item.unit,
         "UNIT PRICE": formatNum(item.unitPrice, 4),
