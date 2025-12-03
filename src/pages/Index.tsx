@@ -110,7 +110,7 @@ const Index = () => {
 
     const csvRows: string[] = [];
     // Header row
-    csvRows.push("CODE;DEC.;UNIT;Department;landed cost;selling price");
+    csvRows.push("CODE,DEC.,UNIT,Department,landed cost,selling price");
     
     // Match processed items with department items by code
     for (const deptItem of departmentItems) {
@@ -127,7 +127,7 @@ const Index = () => {
           `R${formatNum(processedItem.landedCost)}`,
           `R${formatNum(processedItem.sellingPrice)}`,
         ];
-        csvRows.push(row.join(';'));
+        csvRows.push(row.join(','));
       }
     }
 
