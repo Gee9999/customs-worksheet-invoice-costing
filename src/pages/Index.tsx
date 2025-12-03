@@ -123,7 +123,7 @@ const Index = () => {
           deptItem.code,
           deptItem.description.replace(/,/g, ''),
           deptItem.unit,
-          deptItem.department,
+          `="${deptItem.department}"`,
           `R${formatNum(processedItem.landedCost)}`,
           formatNum(processedItem.sellingPrice),
         ];
