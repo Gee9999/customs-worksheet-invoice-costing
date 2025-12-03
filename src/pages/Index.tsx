@@ -96,10 +96,9 @@ const Index = () => {
         const landedCost = item.unitPrice * factor;
         const finalCost = landedCost * item.qty; // Total line value
         
-        // Calculate selling price per unit for 45% gross profit margin
-        // GP = (Selling - Cost) / Selling = 0.45
-        // Selling = Cost / (1 - 0.45) = Cost / 0.55
-        const rawSellingPrice = landedCost / 0.55;
+        // Calculate selling price: 45% GP margin + 15% VAT, rounded to nearest R0.50
+        // Selling = (Landed / 0.55) × 1.15
+        const rawSellingPrice = (landedCost / 0.55) * 1.15;
         const sellingPrice = roundToHalf(rawSellingPrice);
 
         console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, landedCost=${landedCost.toFixed(2)}, sellingPrice=${sellingPrice}`);
