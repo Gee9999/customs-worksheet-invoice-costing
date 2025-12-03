@@ -85,9 +85,11 @@ const Index = () => {
       // Process items
       console.log("Available factors:", costingData.factors);
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
-        const dutyPercent = matchItemToCustomsDuty(item, customsItems);
-        console.log(`Item: ${item.description}, Duty: ${dutyPercent}%`);
-        const factor = interpolateFactor(dutyPercent, costingData.factors);
+        // Use duty and factor from invoice file if available, otherwise fall back to calculation
+        const dutyPercent = item.dutyPercent > 0 ? item.dutyPercent : matchItemToCustomsDuty(item, customsItems);
+        const factor = item.factor > 0 ? item.factor : interpolateFactor(dutyPercent, costingData.factors);
+        
+        console.log(`Item: ${item.description}, Duty: ${dutyPercent}%, Factor: ${factor}`);
         
         // Landed cost = Unit Price × Factor (per unit in ZAR)
         const landedCost = item.unitPrice * factor;
