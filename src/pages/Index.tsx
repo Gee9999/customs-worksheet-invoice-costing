@@ -77,6 +77,11 @@ const Index = () => {
         { line: 8, tariff: "39269099", productCode: "FIMO BEADS", dutyFormula: "15%", dutyPercent: 15, value: 0 },
       ];
 
+      // Helper function to round to nearest 0.50
+      const roundToHalf = (value: number): number => {
+        return Math.round(value * 2) / 2;
+      };
+
       // Process items
       console.log("Available factors:", costingData.factors);
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
@@ -84,8 +89,14 @@ const Index = () => {
         console.log(`Item: ${item.description}, Duty: ${dutyPercent}%`);
         const factor = interpolateFactor(dutyPercent, costingData.factors);
         const finalCost = item.amount * factor;
+        
+        // Calculate selling price for 45% gross profit margin
+        // GP = (Selling - Cost) / Selling = 0.45
+        // Selling = Cost / (1 - 0.45) = Cost / 0.55
+        const rawSellingPrice = finalCost / 0.55;
+        const sellingPrice = roundToHalf(rawSellingPrice);
 
-        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}`);
+        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}, sellingPrice=${sellingPrice}`);
 
         return {
           cartonNo: item.cartonNo,
@@ -98,6 +109,7 @@ const Index = () => {
           dutyPercent,
           factor,
           finalCost,
+          sellingPrice,
         };
       });
 
@@ -141,6 +153,7 @@ const Index = () => {
         "DUTY %": item.dutyPercent,
         "FACTOR": item.factor,
         "FINAL COST": item.finalCost,
+        "SELLING PRICE": item.sellingPrice,
       }))
     );
 
