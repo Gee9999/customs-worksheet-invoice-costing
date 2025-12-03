@@ -90,13 +90,14 @@ const Index = () => {
         const factor = interpolateFactor(dutyPercent, costingData.factors);
         const finalCost = item.amount * factor;
         
-        // Calculate selling price for 45% gross profit margin
+        // Calculate selling price per unit for 45% gross profit margin
         // GP = (Selling - Cost) / Selling = 0.45
         // Selling = Cost / (1 - 0.45) = Cost / 0.55
-        const rawSellingPrice = finalCost / 0.55;
+        const unitCost = finalCost / item.qty;
+        const rawSellingPrice = unitCost / 0.55;
         const sellingPrice = roundToHalf(rawSellingPrice);
 
-        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}, sellingPrice=${sellingPrice}`);
+        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, finalCost=${finalCost}, unitCost=${unitCost}, sellingPrice=${sellingPrice}`);
 
         return {
           cartonNo: item.cartonNo,
