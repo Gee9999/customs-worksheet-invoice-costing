@@ -147,6 +147,10 @@ const Index = () => {
       return;
     }
 
+    // Format numbers with "." as decimal separator
+    const formatNum = (num: number, decimals: number = 2) => 
+      num.toFixed(decimals).replace(',', '.');
+    
     const worksheet = XLSX.utils.json_to_sheet(
       processedItems.map(item => ({
         "C/NO.": item.cartonNo,
@@ -154,13 +158,13 @@ const Index = () => {
         "DESCRIPTION": item.description,
         "QTY": item.qty,
         "UNIT": item.unit,
-        "UNIT PRICE": item.unitPrice,
-        "AMOUNT": item.amount,
+        "UNIT PRICE": formatNum(item.unitPrice, 4),
+        "AMOUNT": formatNum(item.amount, 2),
         "DUTY %": item.dutyPercent,
-        "FACTOR": item.factor,
-        "LANDED": item.landedCost,
-        "VALUE": item.finalCost,
-        "SELLING PRICE": item.sellingPrice,
+        "FACTOR": formatNum(item.factor, 8),
+        "LANDED": formatNum(item.landedCost, 2),
+        "VALUE": formatNum(item.finalCost, 2),
+        "SELLING PRICE": formatNum(item.sellingPrice, 2),
       }))
     );
 
