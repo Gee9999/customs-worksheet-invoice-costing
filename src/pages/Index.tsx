@@ -10,14 +10,24 @@ import { Download, Calculator, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
+interface DepartmentItem {
+  code: string;
+  description: string;
+  unit: string;
+  department: string;
+}
+
 const Index = () => {
   const [costingFile, setCostingFile] = useState<File | null>(null);
   const [worksheetFile, setWorksheetFile] = useState<File | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [departmentFile, setDepartmentFile] = useState<File | null>(null);
   
   const [costing, setCosting] = useState<AirShipmentCosting | null>(null);
   const [processedItems, setProcessedItems] = useState<ProcessedInvoiceItem[]>([]);
+  const [departmentItems, setDepartmentItems] = useState<DepartmentItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isParsingDepartment, setIsParsingDepartment] = useState(false);
   
   const { toast } = useToast();
 
@@ -42,6 +52,97 @@ const Index = () => {
     toast({
       title: "Invoice uploaded",
       description: file.name,
+    });
+  };
+
+  const handleDepartmentUpload = async (file: File) => {
+    setDepartmentFile(file);
+    setIsParsingDepartment(true);
+    
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+      
+      const items: DepartmentItem[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (row && row[0]) {
+          items.push({
+            code: String(row[0] || '').trim(),
+            description: String(row[1] || '').trim(),
+            unit: String(row[2] || '').trim(),
+            department: String(row[3] || '').trim(),
+          });
+        }
+      }
+      
+      setDepartmentItems(items);
+      toast({
+        title: "Department invoice uploaded",
+        description: `${items.length} items loaded from ${file.name}`,
+      });
+    } catch (error) {
+      console.error("Error parsing department file:", error);
+      toast({
+        title: "Error parsing file",
+        description: "Please check the file format",
+        variant: "destructive",
+      });
+    } finally {
+      setIsParsingDepartment(false);
+    }
+  };
+
+  const handleExportToCSV = () => {
+    if (processedItems.length === 0 || departmentItems.length === 0) {
+      toast({
+        title: "Missing data",
+        description: "Please ensure costs are calculated and department file is uploaded",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formatNum = (num: number, decimals: number = 2) => 
+      num.toFixed(decimals).replace(',', '.');
+
+    const csvRows: string[] = [];
+    // Header row
+    csvRows.push("CODE;DEC.;UNIT;Department;landed cost;selling price");
+    
+    // Match processed items with department items by code
+    for (const deptItem of departmentItems) {
+      const processedItem = processedItems.find(
+        p => p.code.trim().toLowerCase() === deptItem.code.trim().toLowerCase()
+      );
+      
+      if (processedItem) {
+        const row = [
+          deptItem.code.replace(/,/g, ''),
+          deptItem.description.replace(/,/g, ''),
+          deptItem.unit.replace(/,/g, ''),
+          deptItem.department.replace(/,/g, ''),
+          `R${formatNum(processedItem.landedCost)}`,
+          `R${formatNum(processedItem.sellingPrice)}`,
+        ];
+        csvRows.push(row.join(';'));
+      }
+    }
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `department_costs_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV exported",
+      description: `Exported ${csvRows.length - 1} items`,
     });
   };
 
@@ -245,6 +346,54 @@ const Index = () => {
               </div>
               <ProcessedInvoiceTable items={processedItems} />
             </div>
+
+            {/* Department Export Section */}
+            <Card className="mt-8">
+              <CardContent className="py-6">
+                <h3 className="text-xl font-semibold mb-4">Export with Departments</h3>
+                <p className="text-muted-foreground mb-4">
+                  Upload the Department Invoice to match departments and export as CSV
+                </p>
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex-1 min-w-[200px]">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={(e) => e.target.files?.[0] && handleDepartmentUpload(e.target.files[0])}
+                      className="hidden"
+                      id="department-upload"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('department-upload')?.click()}
+                      disabled={isParsingDepartment}
+                      className="w-full"
+                    >
+                      {isParsingDepartment ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Parsing...</>
+                      ) : departmentFile ? (
+                        departmentFile.name
+                      ) : (
+                        "Upload Department Invoice"
+                      )}
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleExportToCSV}
+                    disabled={departmentItems.length === 0}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export to CSV
+                  </Button>
+                </div>
+                {departmentItems.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {departmentItems.length} department items loaded
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
 
