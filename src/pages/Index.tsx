@@ -85,15 +85,16 @@ const Index = () => {
       // Process items
       console.log("Available factors:", costingData.factors);
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
-        // Use duty and factor from invoice file if available, otherwise fall back to calculation
-        const dutyPercent = item.dutyPercent > 0 ? item.dutyPercent : matchItemToCustomsDuty(item, customsItems);
-        const factor = item.factor > 0 ? item.factor : interpolateFactor(dutyPercent, costingData.factors);
+        // Calculate duty from customs worksheet matching
+        const dutyPercent = matchItemToCustomsDuty(item, customsItems);
+        // Calculate factor from costing file using interpolation
+        const factor = interpolateFactor(dutyPercent, costingData.factors);
         
         console.log(`Item: ${item.description}, Duty: ${dutyPercent}%, Factor: ${factor}`);
         
         // Landed cost = Unit Price × Factor (per unit in ZAR)
         const landedCost = item.unitPrice * factor;
-        const finalCost = landedCost * item.qty; // Total line cost
+        const finalCost = landedCost * item.qty; // Total line value
         
         // Calculate selling price per unit for 45% gross profit margin
         // GP = (Selling - Cost) / Selling = 0.45
@@ -101,7 +102,7 @@ const Index = () => {
         const rawSellingPrice = landedCost / 0.55;
         const sellingPrice = roundToHalf(rawSellingPrice);
 
-        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, landedCost=${landedCost}, sellingPrice=${sellingPrice}`);
+        console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, landedCost=${landedCost.toFixed(2)}, sellingPrice=${sellingPrice}`);
 
         return {
           cartonNo: item.cartonNo,
@@ -113,6 +114,7 @@ const Index = () => {
           amount: item.amount,
           dutyPercent,
           factor,
+          landedCost,
           finalCost,
           sellingPrice,
         };
@@ -157,7 +159,8 @@ const Index = () => {
         "AMOUNT": item.amount,
         "DUTY %": item.dutyPercent,
         "FACTOR": item.factor,
-        "FINAL COST": item.finalCost,
+        "LANDED": item.landedCost,
+        "VALUE": item.finalCost,
         "SELLING PRICE": item.sellingPrice,
       }))
     );

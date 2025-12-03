@@ -31,6 +31,7 @@ export interface ProcessedInvoiceItem {
   amount: number;
   dutyPercent: number;
   factor: number;
-  finalCost: number;
+  landedCost: number;  // Per unit landed cost (Unit Price × Factor)
+  finalCost: number;   // Total line value (Landed × Qty)
   sellingPrice: number;
 }
