@@ -77,9 +77,9 @@ const Index = () => {
         { line: 8, tariff: "39269099", productCode: "FIMO BEADS", dutyFormula: "15%", dutyPercent: 15, value: 0 },
       ];
 
-      // Helper function to round to nearest 0.50
-      const roundToHalf = (value: number): number => {
-        return Math.round(value * 2) / 2;
+      // Helper function to round to nearest 0.25 (R0.25, R0.50, R0.75, R1.00, etc.)
+      const roundToQuarter = (value: number): number => {
+        return Math.round(value * 4) / 4;
       };
 
       // Process items
@@ -99,7 +99,7 @@ const Index = () => {
         // Calculate selling price: 45% GP margin + 15% VAT, rounded to nearest R0.50
         // Selling = (Landed / 0.55) × 1.15
         const rawSellingPrice = (landedCost / 0.55) * 1.15;
-        const sellingPrice = roundToHalf(rawSellingPrice);
+        const sellingPrice = roundToQuarter(rawSellingPrice);
 
         console.log(`Processing ${item.description}: duty=${dutyPercent}%, factor=${factor}, landedCost=${landedCost.toFixed(2)}, sellingPrice=${sellingPrice}`);
 
