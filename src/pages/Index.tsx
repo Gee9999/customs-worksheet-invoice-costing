@@ -116,8 +116,8 @@ const Index = () => {
       num.toFixed(decimals).replace(',', '.');
 
     const csvRows: string[] = [];
-    // Header row (comma-separated like 1.csv)
-    csvRows.push("CODE,DEC.,UNIT,Department,landed cost,selling price");
+    // Header row
+    csvRows.push("CODE,Description,UNIT,Department,Cost Excl,Selling Price Incl");
     
     // Match processed items with department items by code
     for (const deptItem of departmentItems) {
@@ -131,7 +131,7 @@ const Index = () => {
           deptItem.description.replace(/,/g, ''),
           deptItem.unit,
           `="${deptItem.department}"`,
-          `R${formatNum(processedItem.landedCost)}`,
+          formatNum(processedItem.landedCost),
           formatNum(processedItem.sellingPrice),
         ];
         csvRows.push(row.join(','));
