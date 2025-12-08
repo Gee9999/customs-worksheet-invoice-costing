@@ -65,16 +65,27 @@ const Index = () => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }) as any[][];
       
+      console.log("Department file rows:", rows.slice(0, 5));
+      console.log("Header row:", rows[0]);
+      
       const items: DepartmentItem[] = [];
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row && row[0]) {
-          // Columns: CODE, DEC., QTY, UNIT, Department, UNIT PRICE
-          const deptValue = String(row[4] || '').trim();
+          // Find Department column index dynamically
+          const headerRow = rows[0] as string[];
+          const deptColIndex = headerRow.findIndex(h => 
+            String(h || '').toLowerCase().includes('department')
+          );
+          const unitColIndex = headerRow.findIndex(h => 
+            String(h || '').toLowerCase() === 'unit'
+          );
+          
+          const deptValue = String(row[deptColIndex] || row[4] || '').trim();
           items.push({
             code: String(row[0] || '').trim(),
             description: String(row[1] || '').trim(),
-            unit: String(row[3] || '').trim(),
+            unit: String(row[unitColIndex] || row[3] || '').trim(),
             department: deptValue.padStart(2, '0'),
           });
         }
