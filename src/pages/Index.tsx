@@ -72,12 +72,12 @@ const Index = () => {
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row && row[0]) {
-          // Columns: CODE(0), DEC.(1), QTY(2), UNIT(3), Department(4), UNIT PRICE(5)
-          const deptValue = String(row[4] || '').trim();
+          // Columns: CODE(0), DEC.(1), UNIT(2), Department(3), UNIT PRICE(4)
+          const deptValue = String(row[3] || '').trim();
           items.push({
             code: String(row[0] || '').trim(),
             description: String(row[1] || '').trim(),
-            unit: String(row[3] || '').trim(),
+            unit: String(row[2] || '').trim(),
             department: deptValue.padStart(2, '0'),
           });
         }
