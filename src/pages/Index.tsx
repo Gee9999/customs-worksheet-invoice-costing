@@ -65,31 +65,25 @@ const Index = () => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }) as any[][];
       
-      console.log("Department file rows:", rows.slice(0, 5));
-      console.log("Header row:", rows[0]);
+      console.log("Department file first 3 rows:", JSON.stringify(rows.slice(0, 3)));
       
       const items: DepartmentItem[] = [];
+      // Skip header row (index 0)
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row && row[0]) {
-          // Find Department column index dynamically
-          const headerRow = rows[0] as string[];
-          const deptColIndex = headerRow.findIndex(h => 
-            String(h || '').toLowerCase().includes('department')
-          );
-          const unitColIndex = headerRow.findIndex(h => 
-            String(h || '').toLowerCase() === 'unit'
-          );
-          
-          const deptValue = String(row[deptColIndex] || row[4] || '').trim();
+          // Columns: CODE(0), DEC.(1), QTY(2), UNIT(3), Department(4), UNIT PRICE(5)
+          const deptValue = String(row[4] || '').trim();
           items.push({
             code: String(row[0] || '').trim(),
             description: String(row[1] || '').trim(),
-            unit: String(row[unitColIndex] || row[3] || '').trim(),
+            unit: String(row[3] || '').trim(),
             department: deptValue.padStart(2, '0'),
           });
         }
       }
+      
+      console.log("Parsed department items:", items.length, "First item:", items[0]);
       
       setDepartmentItems(items);
       toast({
