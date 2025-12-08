@@ -67,35 +67,21 @@ const Index = () => {
       
       console.log("Department file first 3 rows:", JSON.stringify(rows.slice(0, 3)));
       
-      // Find column indices from header row
-      const headerRow = rows[0] as string[];
-      const codeIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('CODE'));
-      const descIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEC'));
-      const unitIdx = headerRow.findIndex(h => String(h || '').toUpperCase().trim() === 'UNIT');
-      const deptIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEPARTMENT'));
-      
-      // Debug: show what columns were found
-      alert(`Found columns - CODE:${codeIdx}, DEC:${descIdx}, UNIT:${unitIdx}, DEPT:${deptIdx}\nHeaders: ${JSON.stringify(headerRow)}`);
-      
+      // Fixed column indices: CODE(0), DEC.(1), UNIT(2), Department(3), UNIT PRICE(4)
       const items: DepartmentItem[] = [];
-      // Skip header row (index 0)
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        if (row && row[codeIdx]) {
-          const deptValue = String(row[deptIdx] || '').trim();
+        if (row && row[0]) {
           items.push({
-            code: String(row[codeIdx] || '').trim(),
-            description: String(row[descIdx] || '').trim(),
-            unit: String(row[unitIdx] || '').trim(),
-            department: deptValue.padStart(2, '0'),
+            code: String(row[0] || '').trim(),
+            description: String(row[1] || '').trim(),
+            unit: String(row[2] || '').trim(),  // EACH, DOZEN, PAIR
+            department: String(row[3] || '').trim().padStart(2, '0'),  // 06, 22, etc.
           });
         }
       }
       
-      // Debug: show first parsed item
-      alert(`First item: ${JSON.stringify(items[0])}`);
-      
-      console.log("Parsed department items:", items.length, "First item:", JSON.stringify(items[0]));
+      console.log("Parsed:", items.length, "First:", JSON.stringify(items[0]));
       
       setDepartmentItems(items);
       toast({
