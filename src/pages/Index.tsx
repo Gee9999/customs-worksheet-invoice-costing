@@ -67,23 +67,31 @@ const Index = () => {
       
       console.log("Department file first 3 rows:", JSON.stringify(rows.slice(0, 3)));
       
+      // Find column indices from header row
+      const headerRow = rows[0] as string[];
+      const codeIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('CODE'));
+      const descIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEC'));
+      const unitIdx = headerRow.findIndex(h => String(h || '').toUpperCase() === 'UNIT');
+      const deptIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEPARTMENT'));
+      
+      console.log("Column indices - CODE:", codeIdx, "DEC:", descIdx, "UNIT:", unitIdx, "DEPT:", deptIdx);
+      
       const items: DepartmentItem[] = [];
       // Skip header row (index 0)
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        if (row && row[0]) {
-          // Columns: CODE(0), DEC.(1), UNIT(2), Department(3), UNIT PRICE(4)
-          const deptValue = String(row[3] || '').trim();
+        if (row && row[codeIdx]) {
+          const deptValue = String(row[deptIdx] || '').trim();
           items.push({
-            code: String(row[0] || '').trim(),
-            description: String(row[1] || '').trim(),
-            unit: String(row[2] || '').trim(),
+            code: String(row[codeIdx] || '').trim(),
+            description: String(row[descIdx] || '').trim(),
+            unit: String(row[unitIdx] || '').trim(),
             department: deptValue.padStart(2, '0'),
           });
         }
       }
       
-      console.log("Parsed department items:", items.length, "First item:", items[0]);
+      console.log("Parsed department items:", items.length, "First item:", JSON.stringify(items[0]));
       
       setDepartmentItems(items);
       toast({
