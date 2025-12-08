@@ -61,7 +61,7 @@ const Index = () => {
     
     try {
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
+      const workbook = XLSX.read(data, { type: "array", cellText: true, raw: false });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
       
@@ -72,8 +72,8 @@ const Index = () => {
           items.push({
             code: String(row[0] || '').trim(),
             description: String(row[1] || '').trim(),
-            unit: String(row[2] || '').trim(),
-            department: String(row[3] || '').trim(),
+            unit: String(row[3] || '').trim(),
+            department: String(row[4] || '').trim().padStart(2, '0'),
           });
         }
       }
