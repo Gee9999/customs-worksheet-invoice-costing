@@ -61,19 +61,21 @@ const Index = () => {
     
     try {
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array", cellText: true, raw: false });
+      const workbook = XLSX.read(data, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }) as any[][];
       
       const items: DepartmentItem[] = [];
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row && row[0]) {
+          // Columns: CODE, DEC., QTY, UNIT, Department, UNIT PRICE
+          const deptValue = String(row[4] || '').trim();
           items.push({
             code: String(row[0] || '').trim(),
             description: String(row[1] || '').trim(),
             unit: String(row[3] || '').trim(),
-            department: String(row[4] || '').trim().padStart(2, '0'),
+            department: deptValue.padStart(2, '0'),
           });
         }
       }
