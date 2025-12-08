@@ -71,10 +71,11 @@ const Index = () => {
       const headerRow = rows[0] as string[];
       const codeIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('CODE'));
       const descIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEC'));
-      const unitIdx = headerRow.findIndex(h => String(h || '').toUpperCase() === 'UNIT');
+      const unitIdx = headerRow.findIndex(h => String(h || '').toUpperCase().trim() === 'UNIT');
       const deptIdx = headerRow.findIndex(h => String(h || '').toUpperCase().includes('DEPARTMENT'));
       
-      console.log("Column indices - CODE:", codeIdx, "DEC:", descIdx, "UNIT:", unitIdx, "DEPT:", deptIdx);
+      // Debug: show what columns were found
+      alert(`Found columns - CODE:${codeIdx}, DEC:${descIdx}, UNIT:${unitIdx}, DEPT:${deptIdx}\nHeaders: ${JSON.stringify(headerRow)}`);
       
       const items: DepartmentItem[] = [];
       // Skip header row (index 0)
@@ -90,6 +91,9 @@ const Index = () => {
           });
         }
       }
+      
+      // Debug: show first parsed item
+      alert(`First item: ${JSON.stringify(items[0])}`);
       
       console.log("Parsed department items:", items.length, "First item:", JSON.stringify(items[0]));
       
