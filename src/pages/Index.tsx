@@ -7,9 +7,10 @@ import { ProcessedInvoiceTable } from "@/components/ProcessedInvoiceTable";
 import { LogViewer } from "@/components/LogViewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, Calculator, Loader2 } from "lucide-react";
+import { Download, Calculator, Loader2, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import { saveShipment } from "@/lib/supabase";
 
 interface DepartmentItem {
   code: string;
@@ -29,7 +30,8 @@ const Index = () => {
   const [departmentItems, setDepartmentItems] = useState<DepartmentItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isParsingDepartment, setIsParsingDepartment] = useState(false);
-  
+  const [isSharing, setIsSharing] = useState(false);
+
   const { toast } = useToast();
 
   const handleCostingUpload = (file: File) => {
@@ -287,9 +289,9 @@ const Index = () => {
     }
 
     // Format numbers with "." as decimal separator
-    const formatNum = (num: number, decimals: number = 2) => 
+    const formatNum = (num: number, decimals: number = 2) =>
       num.toFixed(decimals).replace(',', '.');
-    
+
     const worksheet = XLSX.utils.json_to_sheet(
       processedItems.map(item => ({
         "C/NO.": item.cartonNo,
@@ -317,6 +319,59 @@ const Index = () => {
     });
   };
 
+  const handleShare = async () => {
+    if (processedItems.length === 0 || !costing) {
+      toast({
+        title: "No data to share",
+        description: "Please calculate costs first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSharing(true);
+
+    try {
+      const totalLandedCost = processedItems.reduce((sum, item) => sum + item.finalCost, 0);
+      const totalInvoiceValue = processedItems.reduce((sum, item) => sum + item.amount, 0);
+
+      const summary = {
+        totalItems: processedItems.length,
+        totalInvoiceValue,
+        totalLandedCost,
+        bankCharges: costing.bankCharges,
+        clearingCharges: costing.clearingCharges,
+        duties: costing.duties,
+        overseasTransport: costing.overseasTransport,
+      };
+
+      const shipmentId = await saveShipment({
+        invoiceItems: processedItems,
+        costingData: costing,
+        processedItems,
+        summary,
+      });
+
+      const shareUrl = `${window.location.origin}/shipment/${shipmentId}`;
+
+      await navigator.clipboard.writeText(shareUrl);
+
+      toast({
+        title: "Link copied!",
+        description: "Shareable link has been copied to clipboard",
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+      toast({
+        title: "Share failed",
+        description: error instanceof Error ? error.message : "Failed to create shareable link",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
       <LogViewer />
@@ -341,10 +396,10 @@ const Index = () => {
           />
         </div>
 
-        <div className="mb-8 flex gap-4 justify-center">
-          <Button 
-            onClick={handleCalculate} 
-            size="lg" 
+        <div className="mb-8 flex gap-4 justify-center flex-wrap">
+          <Button
+            onClick={handleCalculate}
+            size="lg"
             type="button"
             className="gap-2"
             disabled={!costingFile || !invoiceFile || isProcessing}
@@ -371,6 +426,26 @@ const Index = () => {
           >
             <Download className="h-5 w-5" />
             Export to Excel
+          </Button>
+          <Button
+            onClick={handleShare}
+            size="lg"
+            type="button"
+            variant="secondary"
+            className="gap-2"
+            disabled={processedItems.length === 0 || isSharing}
+          >
+            {isSharing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Sharing...
+              </>
+            ) : (
+              <>
+                <Share2 className="h-5 w-5" />
+                Share Link
+              </>
+            )}
           </Button>
         </div>
 
