@@ -208,27 +208,38 @@ export function matchItemToCustomsDuty(
   
   // Check for specific product codes first
   if (itemCode.includes("8618100373")) {
-    return 15; // Assuming this is a bead finding based on tariff pattern
+    return 15;
   }
-  
-  // Check for specific product categories
+
+  // Packaging items - FREE
+  if (itemDesc.includes("OPP BAG") || itemDesc.includes("POLYBAG") ||
+      itemDesc.includes("POLY BAG") || itemDesc.includes("PLASTIC BAG")) {
+    return 0;
+  }
+
+  // Textile accessories - 20%
+  if (itemDesc.includes("SATIN CORD") || itemDesc.includes("CORD") ||
+      itemDesc.includes("RIBBON") || itemDesc.includes("STRING")) {
+    return 20;
+  }
+
   // Bead findings (clasps, jumprings) - 15%
-  if (itemDesc.includes("CLASP") || itemDesc.includes("JUMP RING") || itemDesc.includes("JUMPRING") || 
+  if (itemDesc.includes("CLASP") || itemDesc.includes("JUMP RING") || itemDesc.includes("JUMPRING") ||
       itemDesc.includes("FINDING") || itemDesc.includes("CRIMP")) {
     return 15;
   }
-  
-  // Colour box - 10% (check both with code and without)
-  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX") || 
-      itemDesc.includes("BOX") || itemCode.includes("BOX")) {
+
+  // Colour box - 10%
+  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX") ||
+      (itemDesc.includes("BOX") && !itemDesc.includes("OPP"))) {
     return 10;
   }
-  
+
   // Tassels - 22%
   if (itemDesc.includes("TASSEL")) {
     return 22;
   }
-  
+
   // Fimo beads - 15%
   if (itemDesc.includes("FIMO")) {
     return 15;
