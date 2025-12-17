@@ -89,10 +89,14 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     for (let i = 0; i < Math.min(jsonData.length, 25); i++) {
       const row = jsonData[i] || [];
       const upper = row.map((c) => String(c ?? "").toUpperCase().trim());
-      const hasCode = upper.some((c) => c === "CODE" || c.includes("CODE"));
-      const hasDesc = upper.some((c) => c === "DESCRIPTION" || c.includes("DEC"));
-      const hasQty = upper.some((c) => c === "QTY" || c.includes("QTY"));
-      if (hasCode && hasDesc && hasQty) return i;
+      const hasCode = upper.some((c) => c === "CODE" || c.includes("CODE") || c === "ITEM CODE" || c === "PRODUCT CODE");
+      const hasDesc = upper.some((c) => c === "DESCRIPTION" || c.includes("DESC") || c.includes("DEC") || c === "ITEM" || c === "PRODUCT");
+      const hasQty = upper.some((c) => c === "QTY" || c.includes("QTY") || c === "QUANTITY" || c.includes("QUANTITY"));
+      const hasPrice = upper.some((c) => c.includes("PRICE") || c.includes("AMOUNT") || c.includes("VALUE"));
+
+      console.log(`Row ${i} check:`, { hasCode, hasDesc, hasQty, hasPrice, cells: upper });
+
+      if ((hasCode || hasDesc) && (hasQty || hasPrice)) return i;
     }
     return -1;
   };
@@ -103,14 +107,22 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
 
   console.log("Header detection:", { headerIdx, headerRow });
 
+  const findColumn = (patterns: string[]): number => {
+    for (const pattern of patterns) {
+      const idx = headerUpper.findIndex((c) => c === pattern || c.includes(pattern));
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  };
+
   const idx = {
-    cartonNo: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("C/NO") || c.includes("CARTON") || c === "C/NO.") : 0,
-    code: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "CODE" || c.includes("CODE")) : 1,
-    description: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "DEC." || c === "DEC" || c === "DESCRIPTION" || c.includes("DEC")) : 2,
-    qty: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "QTY" || c.includes("QTY")) : 3,
+    cartonNo: headerIdx >= 0 ? findColumn(["C/NO", "CARTON", "CTN"]) : 0,
+    code: headerIdx >= 0 ? findColumn(["CODE", "ITEM CODE", "PRODUCT CODE"]) : 1,
+    description: headerIdx >= 0 ? findColumn(["DESCRIPTION", "DESC", "DEC.", "DEC", "ITEM", "PRODUCT"]) : 2,
+    qty: headerIdx >= 0 ? findColumn(["QTY", "QUANTITY", "QUAN"]) : 3,
     unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" && !c.includes("PRICE")) : 4,
-    unitPrice: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("UNIT PRICE") || c === "UNITPRICE") : 5,
-    amount: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "AMOUNT" || c.includes("AMOUNT") || c.includes("VALUE")) : 6,
+    unitPrice: headerIdx >= 0 ? findColumn(["UNIT PRICE", "UNITPRICE", "PRICE", "U/PRICE"]) : 5,
+    amount: headerIdx >= 0 ? findColumn(["AMOUNT", "TOTAL", "VALUE", "LINE TOTAL"]) : 6,
   };
 
   console.log("Column indices:", idx);
@@ -118,9 +130,11 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
 
   const toNum = (v: any) => {
-    const s = String(v ?? "").replace(/,/g, "").trim();
+    if (v === null || v === undefined || v === '') return 0;
+    const s = String(v).replace(/,/g, '').replace(/\s+/g, '').trim();
+    if (s === '' || s === '-') return 0;
     const n = parseFloat(s);
-    return Number.isFinite(n) ? n : 0;
+    return Number.isFinite(n) && !Number.isNaN(n) ? n : 0;
   };
 
   let skippedRows = 0;
@@ -138,28 +152,38 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
       continue;
     }
 
-    const cartonNo = String(row[idx.cartonNo] ?? "").trim();
-    const qty = toNum(row[idx.qty]);
-    const unit = String(row[idx.unit] ?? "").trim();
-    const unitPrice = toNum(row[idx.unitPrice]);
-    const amount = toNum(row[idx.amount]);
+    const cartonNo = idx.cartonNo >= 0 ? String(row[idx.cartonNo] ?? "").trim() : "";
+    const qty = idx.qty >= 0 ? toNum(row[idx.qty]) : 0;
+    const unit = idx.unit >= 0 ? String(row[idx.unit] ?? "").trim() : "";
+    const unitPrice = idx.unitPrice >= 0 ? toNum(row[idx.unitPrice]) : 0;
+    const amount = idx.amount >= 0 ? toNum(row[idx.amount]) : 0;
 
-    if (amount > 0 || (unitPrice > 0 && qty > 0)) {
-      const finalAmount = amount > 0 ? amount : unitPrice * qty;
+    const finalAmount = amount > 0 ? amount : (unitPrice > 0 && qty > 0 ? unitPrice * qty : 0);
+
+    if (finalAmount > 0) {
       items.push({
         cartonNo,
         code,
         description,
-        qty,
+        qty: qty > 0 ? qty : 1,
         unit,
-        unitPrice,
+        unitPrice: unitPrice > 0 ? unitPrice : finalAmount,
         amount: finalAmount,
         dutyPercent: 0,
         factor: 0,
       });
       validRows++;
     } else {
-      console.log(`Row ${i} skipped - no valid amount/price:`, { code, description, qty, unitPrice, amount });
+      console.log(`Row ${i} skipped - no valid amount/price:`, {
+        code,
+        description,
+        qty,
+        unitPrice,
+        amount,
+        rawQty: row[idx.qty],
+        rawPrice: row[idx.unitPrice],
+        rawAmount: row[idx.amount]
+      });
       skippedRows++;
     }
   }
