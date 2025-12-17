@@ -152,6 +152,10 @@ const Index = () => {
   };
 
   const handleCalculate = async () => {
+    console.log("=== STARTING CALCULATION ===");
+    console.log("Costing file:", costingFile?.name);
+    console.log("Invoice file:", invoiceFile?.name);
+
     if (!costingFile || !invoiceFile) {
       toast({
         title: "Missing files",
@@ -164,12 +168,14 @@ const Index = () => {
     setIsProcessing(true);
 
     try {
-      // Parse costing file
+      console.log("Step 1: Parsing costing file...");
       const costingData = await parseAirShipmentCosting(costingFile);
+      console.log("Costing data parsed:", costingData);
       setCosting(costingData);
 
-      // Parse invoice
+      console.log("Step 2: Parsing invoice file...");
       const invoiceItems = await parseInvoice(invoiceFile);
+      console.log("Invoice items parsed:", invoiceItems.length, "items");
       if (invoiceItems.length === 0) {
         toast({
           title: "No invoice lines found",
@@ -203,7 +209,7 @@ const Index = () => {
         return Math.round(value * 4) / 4;
       };
 
-      // Process items
+      console.log("Step 3: Processing items with factors...");
       console.log("Available factors:", costingData.factors);
       const processed: ProcessedInvoiceItem[] = invoiceItems.map(item => {
         // Calculate duty from customs worksheet matching
@@ -242,15 +248,26 @@ const Index = () => {
 
       setProcessedItems(processed);
 
+      console.log("Step 4: Calculation complete!");
+      console.log("Total processed items:", processed.length);
+      console.log("=== CALCULATION SUCCESSFUL ===");
+
       toast({
         title: "Calculation complete",
         description: `Processed ${processed.length} items with duties and factors`,
       });
     } catch (error) {
-      console.error("Error processing files:", error);
+      console.error("=== ERROR PROCESSING FILES ===");
+      console.error("Error:", error);
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+      console.error("Costing file:", costingFile?.name);
+      console.error("Invoice file:", invoiceFile?.name);
+      console.error("=============================");
+
       toast({
         title: "Processing error",
-        description: "Failed to process files. Please check the file formats.",
+        description: error instanceof Error ? error.message : "Failed to process files. Please check the file formats.",
         variant: "destructive",
       });
     } finally {
