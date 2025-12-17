@@ -4,6 +4,7 @@ import { parseAirShipmentCosting, parseInvoice, extractDutyFromFormula, matchIte
 import { FileUploader } from "@/components/FileUploader";
 import { CostSummary } from "@/components/CostSummary";
 import { ProcessedInvoiceTable } from "@/components/ProcessedInvoiceTable";
+import { LogViewer } from "@/components/LogViewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Download, Calculator, Loader2 } from "lucide-react";
@@ -318,6 +319,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
+      <LogViewer />
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8 text-center">
           <h1 className="mb-3 text-5xl font-bold tracking-tight">
