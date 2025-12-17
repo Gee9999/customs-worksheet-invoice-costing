@@ -75,27 +75,63 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data);
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as any[][];
 
   const items: InvoiceItem[] = [];
-  
-  // Scan all rows and pick those that look like invoice lines
-  for (let i = 0; i < jsonData.length; i++) {
-    const row = jsonData[i];
-    if (!row || !row[0]) continue; // Skip empty rows
-    
-    const cartonNo = String(row[0] || "");
-    const code = String(row[1] || "");
-    const description = String(row[2] || "");
-    const qty = parseFloat(row[3]) || 0;
-    const unit = String(row[4] || "");
-    const unitPrice = parseFloat(row[5]) || 0;
-    const amount = parseFloat(row[6]) || 0;
 
-    // Include items with amount > 0 OR items with valid unit price
+  // Try to detect a header row so we can parse invoices where the first column (carton) is blank.
+  const findHeaderIndex = (): number => {
+    for (let i = 0; i < Math.min(jsonData.length, 25); i++) {
+      const row = jsonData[i] || [];
+      const upper = row.map((c) => String(c ?? "").toUpperCase().trim());
+      const hasCode = upper.some((c) => c === "CODE" || c.includes("CODE"));
+      const hasDesc = upper.some((c) => c === "DESCRIPTION" || c.includes("DEC"));
+      const hasQty = upper.some((c) => c === "QTY" || c.includes("QTY"));
+      if (hasCode && hasDesc && hasQty) return i;
+    }
+    return -1;
+  };
+
+  const headerIdx = findHeaderIndex();
+  const headerRow = headerIdx >= 0 ? (jsonData[headerIdx] || []) : [];
+  const headerUpper = headerRow.map((c) => String(c ?? "").toUpperCase().trim());
+
+  const idx = {
+    cartonNo: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("C/NO") || c.includes("CARTON")) : 0,
+    code: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "CODE" || c.includes("CODE")) : 1,
+    description: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "DESCRIPTION" || c.includes("DEC")) : 2,
+    qty: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "QTY" || c.includes("QTY")) : 3,
+    unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" || c.includes("UNIT")) : 4,
+    unitPrice: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("UNIT PRICE") || c.includes("PRICE")) : 5,
+    amount: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "AMOUNT" || c.includes("AMOUNT") || c.includes("VALUE")) : 6,
+  };
+
+  const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
+
+  const toNum = (v: any) => {
+    const s = String(v ?? "").replace(/,/g, "").trim();
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  for (let i = startRow; i < jsonData.length; i++) {
+    const row = jsonData[i];
+    if (!row) continue;
+
+    const code = String(row[idx.code] ?? "").trim();
+    const description = String(row[idx.description] ?? "").trim();
+
+    // Skip rows that don't look like invoice lines
+    if (!code && !description) continue;
+
+    const cartonNo = String(row[idx.cartonNo] ?? "").trim();
+    const qty = toNum(row[idx.qty]);
+    const unit = String(row[idx.unit] ?? "").trim();
+    const unitPrice = toNum(row[idx.unitPrice]);
+    const amount = toNum(row[idx.amount]);
+
     if (amount > 0 || (unitPrice > 0 && qty > 0)) {
       const finalAmount = amount > 0 ? amount : unitPrice * qty;
-      console.log(`Adding item: ${description}, code: ${code}, amount: ${finalAmount}`);
       items.push({
         cartonNo,
         code,
@@ -110,6 +146,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     }
   }
 
+  console.log("Parsed invoice items:", items.length, "(headerIdx:", headerIdx, ")");
   return items;
 }
 
