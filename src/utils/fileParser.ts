@@ -97,12 +97,12 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const headerUpper = headerRow.map((c) => String(c ?? "").toUpperCase().trim());
 
   const idx = {
-    cartonNo: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("C/NO") || c.includes("CARTON")) : 0,
+    cartonNo: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("C/NO") || c.includes("CARTON") || c === "C/NO.") : 0,
     code: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "CODE" || c.includes("CODE")) : 1,
-    description: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "DESCRIPTION" || c.includes("DEC")) : 2,
+    description: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "DEC." || c === "DEC" || c === "DESCRIPTION" || c.includes("DEC")) : 2,
     qty: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "QTY" || c.includes("QTY")) : 3,
-    unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" || c.includes("UNIT")) : 4,
-    unitPrice: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("UNIT PRICE") || c.includes("PRICE")) : 5,
+    unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" && !c.includes("PRICE")) : 4,
+    unitPrice: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("UNIT PRICE") || c === "UNITPRICE") : 5,
     amount: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "AMOUNT" || c.includes("AMOUNT") || c.includes("VALUE")) : 6,
   };
 
