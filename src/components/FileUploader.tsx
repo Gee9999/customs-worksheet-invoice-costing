@@ -87,13 +87,13 @@ export function FileUploader({
             <FileSpreadsheet className="h-5 w-5" />
             Invoice
           </CardTitle>
-          <CardDescription>Upload the invoice with line items</CardDescription>
+          <CardDescription>Upload the invoice with line items (Excel or CSV)</CardDescription>
         </CardHeader>
         <CardContent>
           <input
             ref={invoiceRef}
             type="file"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => e.target.files?.[0] && onInvoiceUpload(e.target.files[0])}
           />
