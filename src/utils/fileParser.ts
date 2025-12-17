@@ -77,6 +77,11 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as any[][];
 
+  console.log("Invoice file first 10 rows:");
+  for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+    console.log(`Row ${i}:`, jsonData[i]);
+  }
+
   const items: InvoiceItem[] = [];
 
   // Try to detect a header row so we can parse invoices where the first column (carton) is blank.
@@ -96,6 +101,8 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const headerRow = headerIdx >= 0 ? (jsonData[headerIdx] || []) : [];
   const headerUpper = headerRow.map((c) => String(c ?? "").toUpperCase().trim());
 
+  console.log("Header detection:", { headerIdx, headerRow });
+
   const idx = {
     cartonNo: headerIdx >= 0 ? headerUpper.findIndex((c) => c.includes("C/NO") || c.includes("CARTON") || c === "C/NO.") : 0,
     code: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "CODE" || c.includes("CODE")) : 1,
@@ -106,6 +113,8 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     amount: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "AMOUNT" || c.includes("AMOUNT") || c.includes("VALUE")) : 6,
   };
 
+  console.log("Column indices:", idx);
+
   const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
 
   const toNum = (v: any) => {
@@ -114,6 +123,9 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     return Number.isFinite(n) ? n : 0;
   };
 
+  let skippedRows = 0;
+  let validRows = 0;
+
   for (let i = startRow; i < jsonData.length; i++) {
     const row = jsonData[i];
     if (!row) continue;
@@ -121,8 +133,10 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     const code = String(row[idx.code] ?? "").trim();
     const description = String(row[idx.description] ?? "").trim();
 
-    // Skip rows that don't look like invoice lines
-    if (!code && !description) continue;
+    if (!code && !description) {
+      skippedRows++;
+      continue;
+    }
 
     const cartonNo = String(row[idx.cartonNo] ?? "").trim();
     const qty = toNum(row[idx.qty]);
@@ -143,10 +157,14 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
         dutyPercent: 0,
         factor: 0,
       });
+      validRows++;
+    } else {
+      console.log(`Row ${i} skipped - no valid amount/price:`, { code, description, qty, unitPrice, amount });
+      skippedRows++;
     }
   }
 
-  console.log("Parsed invoice items:", items.length, "(headerIdx:", headerIdx, ")");
+  console.log("Parsed invoice items:", items.length, "(headerIdx:", headerIdx, "validRows:", validRows, "skippedRows:", skippedRows, ")");
   return items;
 }
 
