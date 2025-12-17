@@ -126,6 +126,16 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   };
 
   console.log("Column indices:", idx);
+  console.log("Detected column names:", {
+    cartonNo: idx.cartonNo >= 0 ? headerRow[idx.cartonNo] : 'NOT FOUND',
+    code: idx.code >= 0 ? headerRow[idx.code] : 'NOT FOUND',
+    description: idx.description >= 0 ? headerRow[idx.description] : 'NOT FOUND',
+    qty: idx.qty >= 0 ? headerRow[idx.qty] : 'NOT FOUND',
+    unit: idx.unit >= 0 ? headerRow[idx.unit] : 'NOT FOUND',
+    unitPrice: idx.unitPrice >= 0 ? headerRow[idx.unitPrice] : 'NOT FOUND',
+    amount: idx.amount >= 0 ? headerRow[idx.amount] : 'NOT FOUND',
+  });
+  console.log("All header columns:", headerRow);
 
   const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
 
@@ -157,6 +167,19 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     const unit = idx.unit >= 0 ? String(row[idx.unit] ?? "").trim() : "";
     const unitPrice = idx.unitPrice >= 0 ? toNum(row[idx.unitPrice]) : 0;
     const amount = idx.amount >= 0 ? toNum(row[idx.amount]) : 0;
+
+    if (validRows === 0) {
+      console.log(`First data row (${i}) full contents:`, row);
+      console.log(`First data row parsed:`, {
+        code,
+        description,
+        qty,
+        unitPrice,
+        amount,
+        'raw cell at unitPrice index': row[idx.unitPrice],
+        'raw cell at amount index': row[idx.amount],
+      });
+    }
 
     const finalAmount = amount > 0 ? amount : (unitPrice > 0 && qty > 0 ? unitPrice * qty : 0);
 
