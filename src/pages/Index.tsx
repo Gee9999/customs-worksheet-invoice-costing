@@ -170,6 +170,15 @@ const Index = () => {
 
       // Parse invoice
       const invoiceItems = await parseInvoice(invoiceFile);
+      if (invoiceItems.length === 0) {
+        toast({
+          title: "No invoice lines found",
+          description:
+            "We couldn't detect any invoice items. Please confirm the invoice has CODE, DESCRIPTION, QTY, UNIT PRICE and AMOUNT columns.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Create a simple customs mapping based on description
       const customsItems: CustomsItem[] = [
@@ -311,6 +320,7 @@ const Index = () => {
           <Button 
             onClick={handleCalculate} 
             size="lg" 
+            type="button"
             className="gap-2"
             disabled={!costingFile || !invoiceFile || isProcessing}
           >
@@ -329,6 +339,7 @@ const Index = () => {
           <Button
             onClick={handleExportToExcel}
             size="lg"
+            type="button"
             variant="outline"
             className="gap-2"
             disabled={processedItems.length === 0}
