@@ -182,22 +182,24 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     }
 
     const finalAmount = amount > 0 ? amount : (unitPrice > 0 && qty > 0 ? unitPrice * qty : 0);
+    const finalQty = qty > 0 ? qty : 1;
+    const finalUnitPrice = unitPrice > 0 ? unitPrice : (finalAmount > 0 ? finalAmount / finalQty : 1);
 
-    if (finalAmount > 0) {
+    if (finalAmount > 0 || (code && description && qty > 0)) {
       items.push({
         cartonNo,
         code,
         description,
-        qty: qty > 0 ? qty : 1,
+        qty: finalQty,
         unit,
-        unitPrice: unitPrice > 0 ? unitPrice : finalAmount,
-        amount: finalAmount,
+        unitPrice: finalUnitPrice,
+        amount: finalAmount > 0 ? finalAmount : finalUnitPrice * finalQty,
         dutyPercent: 0,
         factor: 0,
       });
       validRows++;
     } else {
-      console.log(`Row ${i} skipped - no valid amount/price:`, {
+      console.log(`Row ${i} skipped - no valid data:`, {
         code,
         description,
         qty,
