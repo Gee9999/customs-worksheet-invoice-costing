@@ -58,38 +58,55 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
   console.log("Factor keys:", Object.keys(factors));
   console.log("Factor values:", Object.values(factors));
 
-  // Parse customs items - look for rows with tariff codes and duty formulas
+  // Parse customs items - simplified 2-column format: PRODUCT CODE | DUTY FORMULA
   const customsItems: CustomsItem[] = [];
 
-  for (let i = 0; i < jsonData.length; i++) {
+  // Find header row with "PRODUCT" and "DUTY"
+  let customsStartRow = -1;
+  for (let i = 0; i < Math.min(50, jsonData.length); i++) {
     const row = jsonData[i];
     if (!row) continue;
 
-    // Columns: COO | TARIFF | PRODUCT CODE | DUTY FORMULA | B/E LINE | VALUE | ...
-    // So: row[0] = COO, row[1] = tariff, row[2] = product, row[3] = duty formula, row[4] = B/E LINE, row[5] = value
-    const tariff = String(row[1] || '').trim();
-    const productCode = String(row[2] || '').trim();
-    const dutyFormula = String(row[3] || '').trim();
-
-    // Check if this looks like a customs entry
-    if (tariff && /^\d{6,10}$/.test(tariff) && dutyFormula && productCode) {
-      const dutyPercent = extractDutyFromFormula(dutyFormula);
-      const value = parseFloat(row[5]) || 0;
-
-      customsItems.push({
-        line: customsItems.length + 1,
-        tariff,
-        productCode,
-        dutyFormula,
-        dutyPercent,
-        value,
-      });
-
-      console.log(`Found customs item: Tariff ${tariff}, Product: ${productCode}, Duty: ${dutyFormula} (${dutyPercent}%), Value: ${value}`);
+    const rowStr = row.map((c: any) => String(c || '').toUpperCase()).join(' ');
+    if (rowStr.includes('PRODUCT') && rowStr.includes('DUTY')) {
+      customsStartRow = i + 1;
+      console.log(`Found customs header at row ${i}`);
+      break;
     }
   }
 
-  console.log(`Parsed ${customsItems.length} customs items`);
+  if (customsStartRow > 0) {
+    for (let i = customsStartRow; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      if (!row) continue;
+
+      // Simple 2-column format: PRODUCT CODE (col 0) | DUTY FORMULA (col 1)
+      const productCode = String(row[0] || '').trim();
+      const dutyFormula = String(row[1] || '').trim();
+
+      // Skip empty rows or header-like rows
+      if (!productCode || !dutyFormula ||
+          productCode.toUpperCase().includes('PRODUCT') ||
+          productCode.toUpperCase().includes('CODE')) {
+        continue;
+      }
+
+      const dutyPercent = extractDutyFromFormula(dutyFormula);
+
+      customsItems.push({
+        line: customsItems.length + 1,
+        tariff: '',
+        productCode,
+        dutyFormula,
+        dutyPercent,
+        value: 0,
+      });
+
+      console.log(`Found customs item: "${productCode}" -> ${dutyFormula} (${dutyPercent}%)`);
+    }
+  }
+
+  console.log(`Parsed ${customsItems.length} customs items from simplified format`);
 
   return {
     invoiceTotal,
@@ -278,34 +295,81 @@ export function matchItemToCustomsDuty(
   const itemDesc = item.description.toUpperCase();
   const itemCode = item.code.toUpperCase();
 
-  console.log(`Matching item: "${item.description}" against ${customsItems.length} customs items`);
+  console.log(`Matching item: "${item.description}" (code: "${item.code}") against ${customsItems.length} customs items`);
 
-  // First, try to match against customs items from the costing file
+  // Common words to ignore
+  const ignoreWords = ['THE', 'AND', 'FOR', 'WITH', 'TO', 'OF', 'IN', 'ON', 'AT', 'FROM', 'BY'];
+
+  let bestMatch: { customs: CustomsItem; score: number } | null = null;
+
   for (const customs of customsItems) {
     const customsDesc = customs.productCode.toUpperCase();
+    let score = 0;
 
-    // Split customs description into significant words (ignore common words)
-    const customsWords = customsDesc.split(/\s+/).filter(word =>
-      word.length > 2 && !['THE', 'AND', 'FOR', 'WITH'].includes(word)
-    );
+    // 1. Check for exact full match (highest priority)
+    if (itemDesc === customsDesc || itemCode === customsDesc) {
+      console.log(`  ✓✓ EXACT MATCH: "${customsDesc}" -> ${customs.dutyPercent}%`);
+      return customs.dutyPercent;
+    }
 
-    // Check if ANY significant word from customs description appears in item description
-    for (const word of customsWords) {
-      if (itemDesc.includes(word)) {
-        console.log(`  ✓ Matched "${word}" from customs "${customsDesc}" -> ${customs.dutyPercent}%`);
-        return customs.dutyPercent;
+    // 2. Check if customs description is fully contained in item (high priority)
+    if (itemDesc.includes(customsDesc) || itemCode.includes(customsDesc)) {
+      score = 100 + customsDesc.length;
+      console.log(`  ✓ Full customs "${customsDesc}" found in item -> score: ${score}`);
+    }
+
+    // 3. Word-by-word matching (medium priority)
+    if (score === 0) {
+      const customsWords = customsDesc.split(/\s+/).filter(word =>
+        word.length > 2 && !ignoreWords.includes(word)
+      );
+
+      for (const word of customsWords) {
+        // Check item description
+        if (itemDesc.includes(word)) {
+          score += word.length * 10;
+          console.log(`  • Found "${word}" in description -> +${word.length * 10}`);
+        }
+        // Check item code
+        if (itemCode.includes(word)) {
+          score += word.length * 5;
+          console.log(`  • Found "${word}" in code -> +${word.length * 5}`);
+        }
       }
     }
 
-    // Also check if the full customs description is contained in the item
-    if (itemDesc.includes(customsDesc)) {
-      console.log(`  ✓ Matched full customs desc "${customsDesc}" -> ${customs.dutyPercent}%`);
-      return customs.dutyPercent;
+    // 4. Partial word matching (lower priority) - check if any word in item contains customs word
+    if (score === 0) {
+      const customsWords = customsDesc.split(/\s+/).filter(word =>
+        word.length > 3 && !ignoreWords.includes(word)
+      );
+      const itemWords = itemDesc.split(/\s+/).filter(word =>
+        word.length > 3 && !ignoreWords.includes(word)
+      );
+
+      for (const customsWord of customsWords) {
+        for (const itemWord of itemWords) {
+          if (itemWord.includes(customsWord) || customsWord.includes(itemWord)) {
+            score += Math.min(customsWord.length, itemWord.length) * 2;
+            console.log(`  • Partial match "${customsWord}" ~ "${itemWord}" -> +${Math.min(customsWord.length, itemWord.length) * 2}`);
+          }
+        }
+      }
+    }
+
+    // Update best match if this score is higher
+    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { customs, score };
     }
   }
 
+  if (bestMatch) {
+    console.log(`  ✓ BEST MATCH: "${bestMatch.customs.productCode}" (score: ${bestMatch.score}) -> ${bestMatch.customs.dutyPercent}%`);
+    return bestMatch.customs.dutyPercent;
+  }
+
   console.log(`  ✗ No match found for "${item.description}", defaulting to 0%`);
-  return 0; // Default to 0% if no match
+  return 0;
 }
 
 export function interpolateFactor(
