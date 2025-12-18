@@ -157,6 +157,7 @@ const Index = () => {
   const handleCalculate = async () => {
     console.log("=== STARTING CALCULATION ===");
     console.log("Costing file:", costingFile?.name);
+    console.log("Worksheet file:", worksheetFile?.name);
     console.log("Invoice file:", invoiceFile?.name);
 
     if (!costingFile || !invoiceFile) {
@@ -189,9 +190,17 @@ const Index = () => {
         return;
       }
 
-      // Use customs items from the costing file
-      const customsItems = costingData.customsItems;
-      console.log("Customs items from costing file:", customsItems.length, "items");
+      // If a separate customs worksheet is provided, parse it for customs items
+      // Otherwise, fall back to customs items from the costing file
+      let customsItems = costingData.customsItems;
+      if (worksheetFile) {
+        console.log("Step 2a: Parsing separate customs worksheet...");
+        const worksheetData = await parseAirShipmentCosting(worksheetFile);
+        customsItems = worksheetData.customsItems;
+        console.log("Customs items from worksheet file:", customsItems.length, "items");
+      } else {
+        console.log("Customs items from costing file:", customsItems.length, "items");
+      }
 
       // Helper function to round to nearest 0.25 (R0.25, R0.50, R0.75, R1.00, etc.)
       const roundToQuarter = (value: number): number => {
