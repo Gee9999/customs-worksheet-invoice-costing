@@ -75,7 +75,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data);
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as any[][];
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true }) as any[][];
 
   console.log("Invoice file first 10 rows:");
   for (let i = 0; i < Math.min(10, jsonData.length); i++) {
