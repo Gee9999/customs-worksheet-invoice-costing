@@ -5,6 +5,7 @@ import { FileUploader } from "@/components/FileUploader";
 import { CostSummary } from "@/components/CostSummary";
 import { ProcessedInvoiceTable } from "@/components/ProcessedInvoiceTable";
 import { LogViewer } from "@/components/LogViewer";
+import { DutyMappingCard } from "@/components/DutyMappingCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Download, Calculator, Loader2, Share2 } from "lucide-react";
@@ -24,8 +25,9 @@ const Index = () => {
   const [worksheetFile, setWorksheetFile] = useState<File | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [departmentFile, setDepartmentFile] = useState<File | null>(null);
-  
+
   const [costing, setCosting] = useState<AirShipmentCosting | null>(null);
+  const [manualCustomsItems, setManualCustomsItems] = useState<CustomsItem[]>([]);
   const [processedItems, setProcessedItems] = useState<ProcessedInvoiceItem[]>([]);
   const [departmentItems, setDepartmentItems] = useState<DepartmentItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -190,10 +192,16 @@ const Index = () => {
         return;
       }
 
-      // If a separate customs worksheet is provided, parse it for customs items
-      // Otherwise, fall back to customs items from the costing file
+      // Priority order for customs items:
+      // 1. Manual entries (if user has added any)
+      // 2. Separate customs worksheet file (if provided)
+      // 3. Customs items from the costing file (fallback)
       let customsItems = costingData.customsItems;
-      if (worksheetFile) {
+      if (manualCustomsItems.length > 0) {
+        console.log("Step 2a: Using manual duty mappings...");
+        customsItems = manualCustomsItems;
+        console.log("Manual customs items:", customsItems.length, "items");
+      } else if (worksheetFile) {
         console.log("Step 2a: Parsing separate customs worksheet...");
         const worksheetData = await parseAirShipmentCosting(worksheetFile);
         customsItems = worksheetData.customsItems;
@@ -388,6 +396,13 @@ const Index = () => {
             costingFile={costingFile}
             worksheetFile={worksheetFile}
             invoiceFile={invoiceFile}
+          />
+        </div>
+
+        <div className="mb-8">
+          <DutyMappingCard
+            customsItems={manualCustomsItems}
+            onCustomsItemsChange={setManualCustomsItems}
           />
         </div>
 

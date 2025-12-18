@@ -1,48 +1,113 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CUSTOMS_MAPPINGS, DUTY_FACTORS } from "@/types/shipment";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, X } from "lucide-react";
+import { CustomsItem } from "@/types/upload";
 
-export function DutyMappingCard() {
+interface DutyMappingCardProps {
+  customsItems: CustomsItem[];
+  onCustomsItemsChange: (items: CustomsItem[]) => void;
+}
+
+export function DutyMappingCard({ customsItems, onCustomsItemsChange }: DutyMappingCardProps) {
+  const [newProduct, setNewProduct] = useState("");
+  const [newDuty, setNewDuty] = useState("");
+
+  const handleAdd = () => {
+    if (!newProduct.trim()) return;
+
+    const dutyPercent = newDuty.toLowerCase() === "free" ? 0 : parseInt(newDuty) || 0;
+
+    const newItem: CustomsItem = {
+      line: customsItems.length + 1,
+      tariff: "",
+      productCode: newProduct.trim(),
+      dutyFormula: newDuty.toLowerCase() === "free" ? "FREE" : `${dutyPercent}%`,
+      dutyPercent,
+      value: 0,
+    };
+
+    onCustomsItemsChange([...customsItems, newItem]);
+    setNewProduct("");
+    setNewDuty("");
+  };
+
+  const handleRemove = (index: number) => {
+    const updated = customsItems.filter((_, i) => i !== index);
+    onCustomsItemsChange(updated);
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Customs Duty Mapping</CardTitle>
-          <CardDescription>Based on customs worksheet classification</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {CUSTOMS_MAPPINGS.map((mapping, index) => (
-            <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
-              <div>
-                <p className="font-medium">{mapping.description}</p>
-                <p className="text-sm text-muted-foreground">Tariff: {mapping.tariff}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Customs Duty Mapping</CardTitle>
+        <CardDescription>
+          Add product keywords and their duty rates. The system will automatically match items.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          {customsItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No mappings yet. Add keywords below to match against your invoice items.
+            </p>
+          ) : (
+            customsItems.map((item, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 border rounded-lg">
+                <div className="flex-1">
+                  <p className="font-medium">{item.productCode}</p>
+                </div>
+                <Badge variant={item.dutyPercent === 0 ? "secondary" : "default"}>
+                  {item.dutyFormula}
+                </Badge>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleRemove(index)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Badge variant={mapping.dutyPercent === 0 ? "secondary" : "default"}>
-                {mapping.dutyPercent}%
-              </Badge>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            ))
+          )}
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Markup Factors</CardTitle>
-          <CardDescription>Applied based on duty percentage</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {Object.entries(DUTY_FACTORS).map(([duty, factor]) => (
-            <div key={duty} className="flex items-center justify-between border-b pb-2 last:border-0">
-              <div>
-                <p className="font-medium">Duty: {duty}%</p>
-              </div>
-              <Badge variant="outline" className="font-mono">
-                {factor.toFixed(8)}
-              </Badge>
+        <div className="border-t pt-4 space-y-3">
+          <div className="grid gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="product">Product Keyword</Label>
+              <Input
+                id="product"
+                placeholder="e.g., WALL CLOCK, OPP BAG, SCARF"
+                value={newProduct}
+                onChange={(e) => setNewProduct(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAdd()}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter a keyword that appears in your invoice items (e.g., "SCARF" will match "SCARF TO ANDRE")
+              </p>
             </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="duty">Duty Rate</Label>
+              <Input
+                id="duty"
+                placeholder="0, 15, 20, 30, or FREE"
+                value={newDuty}
+                onChange={(e) => setNewDuty(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAdd()}
+              />
+            </div>
+          </div>
+          <Button onClick={handleAdd} className="w-full" disabled={!newProduct.trim()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Mapping
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
