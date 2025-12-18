@@ -115,13 +115,15 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     return -1;
   };
 
+  const unitPriceCol = headerIdx >= 0 ? findColumn(["UNIT PRICE", "UNITPRICE", "PRICE", "U/PRICE"]) : -1;
+
   const idx = {
     cartonNo: headerIdx >= 0 ? findColumn(["C/NO", "CARTON", "CTN"]) : 0,
     code: headerIdx >= 0 ? findColumn(["CODE", "ITEM CODE", "PRODUCT CODE"]) : 1,
     description: headerIdx >= 0 ? findColumn(["DESCRIPTION", "DESC", "DEC.", "DEC", "ITEM", "PRODUCT"]) : 2,
     qty: headerIdx >= 0 ? findColumn(["QTY", "QUANTITY", "QUAN"]) : 3,
     unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" && !c.includes("PRICE")) : 4,
-    unitPrice: headerIdx >= 0 ? findColumn(["UNIT PRICE", "UNITPRICE", "PRICE", "U/PRICE"]) : 5,
+    unitPrice: unitPriceCol >= 0 ? unitPriceCol : 5,
     amount: headerIdx >= 0 ? findColumn(["AMOUNT", "TOTAL", "VALUE", "LINE TOTAL"]) : 6,
   };
 
@@ -183,7 +185,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
 
     const finalAmount = amount > 0 ? amount : (unitPrice > 0 && qty > 0 ? unitPrice * qty : 0);
     const finalQty = qty > 0 ? qty : 1;
-    const finalUnitPrice = unitPrice > 0 ? unitPrice : (finalAmount > 0 ? finalAmount / finalQty : 1);
+    const finalUnitPrice = unitPrice > 0 ? unitPrice : (finalAmount > 0 ? finalAmount / finalQty : 0);
 
     if (finalAmount > 0 || (code && description && qty > 0)) {
       items.push({
