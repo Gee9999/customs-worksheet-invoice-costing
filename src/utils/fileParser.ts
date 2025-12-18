@@ -115,15 +115,13 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     return -1;
   };
 
-  const unitPriceCol = headerIdx >= 0 ? findColumn(["UNIT PRICE", "UNITPRICE", "PRICE", "U/PRICE"]) : -1;
-
   const idx = {
     cartonNo: headerIdx >= 0 ? findColumn(["C/NO", "CARTON", "CTN"]) : 0,
     code: headerIdx >= 0 ? findColumn(["CODE", "ITEM CODE", "PRODUCT CODE"]) : 1,
     description: headerIdx >= 0 ? findColumn(["DESCRIPTION", "DESC", "DEC.", "DEC", "ITEM", "PRODUCT"]) : 2,
     qty: headerIdx >= 0 ? findColumn(["QTY", "QUANTITY", "QUAN"]) : 3,
     unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" && !c.includes("PRICE")) : 4,
-    unitPrice: unitPriceCol >= 0 ? unitPriceCol : 5,
+    unitPrice: 5,
     amount: headerIdx >= 0 ? findColumn(["AMOUNT", "TOTAL", "VALUE", "LINE TOTAL"]) : 6,
   };
 
