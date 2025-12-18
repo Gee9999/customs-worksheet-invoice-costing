@@ -121,7 +121,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
     description: headerIdx >= 0 ? findColumn(["DESCRIPTION", "DESC", "DEC.", "DEC", "ITEM", "PRODUCT"]) : 2,
     qty: headerIdx >= 0 ? findColumn(["QTY", "QUANTITY", "QUAN"]) : 3,
     unit: headerIdx >= 0 ? headerUpper.findIndex((c) => c === "UNIT" && !c.includes("PRICE")) : 4,
-    unitPrice: 5,
+    unitPrice: headerIdx >= 0 ? findColumn(["UNIT PRICE", "PRICE", "UNIT_PRICE", "U/PRICE"]) : 5,
     amount: headerIdx >= 0 ? findColumn(["AMOUNT", "TOTAL", "VALUE", "LINE TOTAL"]) : 6,
   };
 
