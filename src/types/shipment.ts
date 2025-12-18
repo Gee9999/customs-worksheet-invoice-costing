@@ -23,6 +23,7 @@ export const DUTY_FACTORS = {
   15: 25.40,
   20: 26.25,
   22: 26.60,
+  30: 28.00,
 } as const;
 
 export const CUSTOMS_MAPPINGS: CustomsMapping[] = [
@@ -34,4 +35,5 @@ export const CUSTOMS_MAPPINGS: CustomsMapping[] = [
   { description: "BEAD FINDINGS", tariff: "83089020", dutyFormula: "15%", dutyPercent: 15 },
   { description: "TASSELS", tariff: "580610", dutyFormula: "22%", dutyPercent: 22 },
   { description: "FIMO BEADS", tariff: "39269099", dutyFormula: "15%", dutyPercent: 15 },
+  { description: "SCARF", tariff: "621430", dutyFormula: "30%", dutyPercent: 30 },
 ];
