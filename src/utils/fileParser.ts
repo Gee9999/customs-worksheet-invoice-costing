@@ -141,7 +141,7 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
 
   const toNum = (v: any) => {
     if (v === null || v === undefined || v === '') return 0;
-    const s = String(v).replace(/,/g, '').replace(/\s+/g, '').trim();
+    const s = String(v).replace(/,/g, '').replace(/\s+/g, '').replace(/#/g, '').trim();
     if (s === '' || s === '-') return 0;
     const n = parseFloat(s);
     return Number.isFinite(n) && !Number.isNaN(n) ? n : 0;
