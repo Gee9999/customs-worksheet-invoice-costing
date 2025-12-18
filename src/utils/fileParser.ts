@@ -65,15 +65,16 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
     const row = jsonData[i];
     if (!row) continue;
 
-    // Look for rows that have tariff codes (8-10 digit numbers) and duty formulas
-    const tariff = String(row[1] || '').trim();
-    const productCode = String(row[2] || '').trim();
-    const dutyFormula = String(row[3] || '').trim();
+    // Columns: LINE | COO | TARIFF | PRODUCT CODE | DUTY FORMULA | ...
+    // So: row[0] = line, row[1] = COO, row[2] = tariff, row[3] = product, row[4] = duty formula
+    const tariff = String(row[2] || '').trim();
+    const productCode = String(row[3] || '').trim();
+    const dutyFormula = String(row[4] || '').trim();
 
     // Check if this looks like a customs entry
-    if (tariff && /^\d{6,10}$/.test(tariff) && dutyFormula) {
+    if (tariff && /^\d{6,10}$/.test(tariff) && dutyFormula && productCode) {
       const dutyPercent = extractDutyFromFormula(dutyFormula);
-      const value = parseFloat(row[4]) || 0;
+      const value = parseFloat(row[5]) || 0;
 
       customsItems.push({
         line: customsItems.length + 1,
