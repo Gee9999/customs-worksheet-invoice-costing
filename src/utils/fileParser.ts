@@ -58,6 +58,38 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
   console.log("Factor keys:", Object.keys(factors));
   console.log("Factor values:", Object.values(factors));
 
+  // Parse customs items - look for rows with tariff codes and duty formulas
+  const customsItems: CustomsItem[] = [];
+
+  for (let i = 0; i < jsonData.length; i++) {
+    const row = jsonData[i];
+    if (!row) continue;
+
+    // Look for rows that have tariff codes (8-10 digit numbers) and duty formulas
+    const tariff = String(row[1] || '').trim();
+    const productCode = String(row[2] || '').trim();
+    const dutyFormula = String(row[3] || '').trim();
+
+    // Check if this looks like a customs entry
+    if (tariff && /^\d{6,10}$/.test(tariff) && dutyFormula) {
+      const dutyPercent = extractDutyFromFormula(dutyFormula);
+      const value = parseFloat(row[4]) || 0;
+
+      customsItems.push({
+        line: customsItems.length + 1,
+        tariff,
+        productCode,
+        dutyFormula,
+        dutyPercent,
+        value,
+      });
+
+      console.log(`Found customs item: Tariff ${tariff}, Product: ${productCode}, Duty: ${dutyFormula} (${dutyPercent}%)`);
+    }
+  }
+
+  console.log(`Parsed ${customsItems.length} customs items`);
+
   return {
     invoiceTotal,
     bankCharges,
@@ -68,6 +100,7 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
     dutiesRate,
     exchangeRate,
     factors,
+    customsItems,
   };
 }
 

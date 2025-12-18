@@ -10,6 +10,7 @@ export interface AirShipmentCosting {
   factors: {
     [key: number]: number;
   };
+  customsItems: CustomsItem[];
 }
 
 export interface CustomsItem {
