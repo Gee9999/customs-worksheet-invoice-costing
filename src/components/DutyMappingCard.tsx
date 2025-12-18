@@ -119,7 +119,7 @@ export function DutyMappingCard({ customsItems, onCustomsItemsChange }: DutyMapp
           <div className="space-y-1.5">
             <CardTitle>Customs Duty Mapping</CardTitle>
             <CardDescription>
-              Add product keywords and their duty rates. The system will automatically match items.
+              Upload customs worksheet to auto-populate, import Excel, or add items manually. Review and edit before calculating.
             </CardDescription>
           </div>
           <Button
@@ -144,7 +144,7 @@ export function DutyMappingCard({ customsItems, onCustomsItemsChange }: DutyMapp
         <div className="space-y-2">
           {customsItems.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No mappings yet. Add keywords below to match against your invoice items.
+              No mappings yet. Upload your customs worksheet PDF above, import an Excel file, or add keywords manually below.
             </p>
           ) : (
             customsItems.map((item, index) => (

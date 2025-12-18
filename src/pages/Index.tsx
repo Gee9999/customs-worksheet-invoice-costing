@@ -44,12 +44,35 @@ const Index = () => {
     });
   };
 
-  const handleWorksheetUpload = (file: File) => {
+  const handleWorksheetUpload = async (file: File) => {
     setWorksheetFile(file);
-    toast({
-      title: "Customs worksheet uploaded",
-      description: file.name,
-    });
+
+    try {
+      console.log("Parsing customs worksheet...");
+      const worksheetData = await parseAirShipmentCosting(file);
+
+      if (worksheetData.customsItems.length > 0) {
+        setManualCustomsItems(worksheetData.customsItems);
+        toast({
+          title: "Customs worksheet uploaded",
+          description: `Loaded ${worksheetData.customsItems.length} duty mappings from ${file.name}`,
+        });
+        console.log(`Extracted ${worksheetData.customsItems.length} customs items:`, worksheetData.customsItems);
+      } else {
+        toast({
+          title: "Customs worksheet uploaded",
+          description: `${file.name} - No duty mappings found`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing customs worksheet:", error);
+      toast({
+        title: "Error parsing worksheet",
+        description: "Could not extract duty mappings. You can add them manually below.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInvoiceUpload = (file: File) => {
@@ -193,21 +216,15 @@ const Index = () => {
       }
 
       // Priority order for customs items:
-      // 1. Manual entries (if user has added any)
-      // 2. Separate customs worksheet file (if provided)
-      // 3. Customs items from the costing file (fallback)
+      // 1. Duty mappings (from worksheet upload, Excel import, or manual entry)
+      // 2. Customs items from the costing file (fallback)
       let customsItems = costingData.customsItems;
       if (manualCustomsItems.length > 0) {
-        console.log("Step 2a: Using manual duty mappings...");
+        console.log("Step 2a: Using duty mappings from Customs Duty Mapping card...");
         customsItems = manualCustomsItems;
-        console.log("Manual customs items:", customsItems.length, "items");
-      } else if (worksheetFile) {
-        console.log("Step 2a: Parsing separate customs worksheet...");
-        const worksheetData = await parseAirShipmentCosting(worksheetFile);
-        customsItems = worksheetData.customsItems;
-        console.log("Customs items from worksheet file:", customsItems.length, "items");
+        console.log("Duty mappings:", customsItems.length, "items");
       } else {
-        console.log("Customs items from costing file:", customsItems.length, "items");
+        console.log("Using customs items from costing file:", customsItems.length, "items");
       }
 
       // Helper function to round to nearest 0.25 (R0.25, R0.50, R0.75, R1.00, etc.)
