@@ -170,6 +170,19 @@ export async function parseInvoice(file: File): Promise<InvoiceItem[]> {
 
     if (validRows === 0) {
       console.log(`First data row (${i}) full contents:`, row);
+      console.log(`First data row - checking all columns:`, {
+        'Column 0': row[0],
+        'Column 1': row[1],
+        'Column 2': row[2],
+        'Column 3': row[3],
+        'Column 4': row[4],
+        'Column 5 (unitPrice)': row[5],
+        'Column 6': row[6],
+        'Column 7': row[7],
+        'Column 8': row[8],
+        'Column 9': row[9],
+        'Column 10': row[10],
+      });
       console.log(`First data row parsed:`, {
         code,
         description,
