@@ -65,8 +65,8 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
     const row = jsonData[i];
     if (!row) continue;
 
-    // Columns: LINE | COO | TARIFF | PRODUCT CODE | DUTY FORMULA | ...
-    // So: row[0] = line, row[1] = COO, row[2] = tariff, row[3] = product, row[4] = duty formula
+    // Columns: LINE | COO | TARIFF | PRODUCT CODE | DUTY FORMULA | B/E LINE | VALUE | ...
+    // So: row[0] = line, row[1] = COO, row[2] = tariff, row[3] = product, row[4] = duty formula, row[5] = B/E LINE, row[6] = value
     const tariff = String(row[2] || '').trim();
     const productCode = String(row[3] || '').trim();
     const dutyFormula = String(row[4] || '').trim();
@@ -74,7 +74,7 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
     // Check if this looks like a customs entry
     if (tariff && /^\d{6,10}$/.test(tariff) && dutyFormula && productCode) {
       const dutyPercent = extractDutyFromFormula(dutyFormula);
-      const value = parseFloat(row[5]) || 0;
+      const value = parseFloat(row[6]) || 0;
 
       customsItems.push({
         line: customsItems.length + 1,
@@ -85,7 +85,7 @@ export async function parseAirShipmentCosting(file: File): Promise<AirShipmentCo
         value,
       });
 
-      console.log(`Found customs item: Tariff ${tariff}, Product: ${productCode}, Duty: ${dutyFormula} (${dutyPercent}%)`);
+      console.log(`Found customs item: Tariff ${tariff}, Product: ${productCode}, Duty: ${dutyFormula} (${dutyPercent}%), Value: ${value}`);
     }
   }
 
