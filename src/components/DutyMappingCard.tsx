@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Upload } from "lucide-react";
 import { CustomsItem } from "@/types/upload";
+import * as XLSX from "xlsx";
 
 interface DutyMappingCardProps {
   customsItems: CustomsItem[];
@@ -15,6 +16,7 @@ interface DutyMappingCardProps {
 export function DutyMappingCard({ customsItems, onCustomsItemsChange }: DutyMappingCardProps) {
   const [newProduct, setNewProduct] = useState("");
   const [newDuty, setNewDuty] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAdd = () => {
     if (!newProduct.trim()) return;
@@ -40,13 +42,103 @@ export function DutyMappingCard({ customsItems, onCustomsItemsChange }: DutyMapp
     onCustomsItemsChange(updated);
   };
 
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet) as Record<string, any>[];
+
+        if (jsonData.length === 0) {
+          console.log("No data found in Excel file");
+          return;
+        }
+
+        const firstRow = jsonData[0];
+        const columnNames = Object.keys(firstRow).map(k => k.toLowerCase());
+
+        let productColumn = "";
+        let dutyColumn = "";
+
+        for (const col of Object.keys(firstRow)) {
+          const colLower = col.toLowerCase();
+          if (colLower.includes("product") || colLower.includes("code") || colLower.includes("item")) {
+            productColumn = col;
+          }
+          if (colLower.includes("duty") || colLower.includes("rate") || colLower.includes("percent") || colLower.includes("formula")) {
+            dutyColumn = col;
+          }
+        }
+
+        if (!productColumn || !dutyColumn) {
+          console.log("Could not find product and duty columns. Columns found:", Object.keys(firstRow));
+          alert("Could not find product code and duty rate columns. Please ensure your Excel file has columns like 'Product Code' and 'Duty Rate'.");
+          return;
+        }
+
+        const importedItems: CustomsItem[] = jsonData
+          .filter(row => row[productColumn] && row[dutyColumn])
+          .map((row, index) => {
+            const productCode = String(row[productColumn]).trim();
+            const dutyValue = String(row[dutyColumn]).trim();
+            const dutyPercent = dutyValue.toLowerCase() === "free" ? 0 : parseInt(dutyValue.replace(/[^0-9]/g, "")) || 0;
+
+            return {
+              line: customsItems.length + index + 1,
+              tariff: "",
+              productCode,
+              dutyFormula: dutyPercent === 0 ? "FREE" : `${dutyPercent}%`,
+              dutyPercent,
+              value: 0,
+            };
+          });
+
+        console.log(`Imported ${importedItems.length} items from Excel file`);
+        onCustomsItemsChange([...customsItems, ...importedItems]);
+      } catch (error) {
+        console.error("Error parsing Excel file:", error);
+        alert("Error parsing Excel file. Please ensure it's a valid Excel file.");
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Customs Duty Mapping</CardTitle>
-        <CardDescription>
-          Add product keywords and their duty rates. The system will automatically match items.
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5">
+            <CardTitle>Customs Duty Mapping</CardTitle>
+            <CardDescription>
+              Add product keywords and their duty rates. The system will automatically match items.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Import Excel
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
