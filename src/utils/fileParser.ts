@@ -276,65 +276,34 @@ export function matchItemToCustomsDuty(
 ): number {
   const itemDesc = item.description.toUpperCase();
   const itemCode = item.code.toUpperCase();
-  
-  // Check for specific product codes first
-  if (itemCode.includes("8618100373")) {
-    return 15;
-  }
 
-  // Packaging items - FREE
-  if (itemDesc.includes("OPP BAG") || itemDesc.includes("POLYBAG") ||
-      itemDesc.includes("POLY BAG") || itemDesc.includes("PLASTIC BAG")) {
-    return 0;
-  }
+  console.log(`Matching item: "${item.description}" against ${customsItems.length} customs items`);
 
-  // Textile accessories - 20%
-  if (itemDesc.includes("SATIN CORD") || itemDesc.includes("CORD") ||
-      itemDesc.includes("RIBBON") || itemDesc.includes("STRING")) {
-    return 20;
-  }
-
-  // Bead findings (clasps, jumprings) - 15%
-  if (itemDesc.includes("CLASP") || itemDesc.includes("JUMP RING") || itemDesc.includes("JUMPRING") ||
-      itemDesc.includes("FINDING") || itemDesc.includes("CRIMP")) {
-    return 15;
-  }
-
-  // Colour box - 10%
-  if (itemDesc.includes("COLOUR BOX") || itemDesc.includes("COLOR BOX") ||
-      (itemDesc.includes("BOX") && !itemDesc.includes("OPP"))) {
-    return 10;
-  }
-
-  // Tassels - 22%
-  if (itemDesc.includes("TASSEL")) {
-    return 22;
-  }
-
-  // Fimo beads - 15%
-  if (itemDesc.includes("FIMO")) {
-    return 15;
-  }
-  
-  // Try to match by description keywords from customs items
+  // First, try to match against customs items from the costing file
   for (const customs of customsItems) {
     const customsDesc = customs.productCode.toUpperCase();
-    
-    // Check for keyword matches
-    if (itemDesc.includes("JEWEL") && customsDesc.includes("JEWEL")) {
-      return customs.dutyPercent;
+
+    // Split customs description into significant words (ignore common words)
+    const customsWords = customsDesc.split(/\s+/).filter(word =>
+      word.length > 2 && !['THE', 'AND', 'FOR', 'WITH'].includes(word)
+    );
+
+    // Check if ANY significant word from customs description appears in item description
+    for (const word of customsWords) {
+      if (itemDesc.includes(word)) {
+        console.log(`  ✓ Matched "${word}" from customs "${customsDesc}" -> ${customs.dutyPercent}%`);
+        return customs.dutyPercent;
+      }
     }
-    if (itemDesc.includes("METAL") && itemDesc.includes("BEAD") && customsDesc.includes("METAL")) {
-      return customs.dutyPercent;
-    }
-    if (itemDesc.includes("GLASS") && itemDesc.includes("BEAD") && customsDesc.includes("GLASS")) {
-      return customs.dutyPercent;
-    }
-    if (itemDesc.includes("SHELL") && customsDesc.includes("SHELL")) {
+
+    // Also check if the full customs description is contained in the item
+    if (itemDesc.includes(customsDesc)) {
+      console.log(`  ✓ Matched full customs desc "${customsDesc}" -> ${customs.dutyPercent}%`);
       return customs.dutyPercent;
     }
   }
-  
+
+  console.log(`  ✗ No match found for "${item.description}", defaulting to 0%`);
   return 0; // Default to 0% if no match
 }
 
